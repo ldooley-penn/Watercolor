@@ -3,7 +3,15 @@ project(Watercolor)
 
 set(CMAKE_CXX_STANDARD 20)
 
-add_executable(Watercolor main.cpp)
+add_executable(Watercolor main.cpp
+        Application.cpp
+        Application.h
+        Utils/ShaderLoader.h
+        Utils/Debug.h
+        OpenGLWrappers/Framebuffer.cpp
+        OpenGLWrappers/Framebuffer.h
+        OpenGLWrappers/FullscreenQuad.cpp
+        OpenGLWrappers/FullscreenQuad.h)
 
 add_subdirectory(${PROJECT_SOURCE_DIR}/Libraries/glfw)
 add_subdirectory(${PROJECT_SOURCE_DIR}/Libraries/glad)

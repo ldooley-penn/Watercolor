@@ -1,6 +1,9 @@
-#include <iostream>
+#include <memory>
+
+#include "Application.h"
 
 int main() {
-    std::cout << "Hello, World!" << std::endl;
+    const std::unique_ptr<Application> app = std::make_unique<Application>();
+    app->Run();
     return 0;
 }
