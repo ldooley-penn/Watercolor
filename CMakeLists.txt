@@ -3,7 +3,8 @@ project(Watercolor)
 
 set(CMAKE_CXX_STANDARD 20)
 
-add_executable(Watercolor main.cpp
+add_executable(Watercolor
+        main.cpp
         Application.cpp
         Application.h
         Utils/ShaderLoader.h
@@ -17,7 +18,9 @@ add_executable(Watercolor main.cpp
 
 add_subdirectory(${PROJECT_SOURCE_DIR}/Libraries/glfw)
 add_subdirectory(${PROJECT_SOURCE_DIR}/Libraries/glad)
-add_subdirectory(${PROJECT_SOURCE_DIR}/Libraries/imgui)
+
+file(GLOB IMGUI_SOURCES ${PROJECT_SOURCE_DIR}/Libraries/imgui/*.cpp)
+add_library(imgui STATIC ${IMGUI_SOURCES})
 
 target_link_libraries(${PROJECT_NAME} PRIVATE
         glfw
@@ -28,6 +31,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
 target_include_directories(${PROJECT_NAME} PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/Libraries/glm
         ${CMAKE_CURRENT_SOURCE_DIR}/Libraries/stb
+        ${PROJECT_SOURCE_DIR}Libraries/imgui
 )
 
 file(COPY "${CMAKE_SOURCE_DIR}/Shaders/" DESTINATION "${CMAKE_BINARY_DIR}/Shaders/")
