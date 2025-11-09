@@ -41,8 +41,8 @@ private:
 
     GLFWwindow* m_window;
     GLuint m_defaultProgram;
-    GLuint m_vao;
-    GLuint m_vbo;
+    GLuint m_rgbToLuvProgram;
+    GLuint m_luvToRgbProgram;
 
     std::unordered_set<int> m_keysPressed;
 

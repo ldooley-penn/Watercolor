@@ -9,7 +9,7 @@ class Texture2D;
 
 class Framebuffer {
     public:
-    explicit Framebuffer(glm::ivec2 resolution, GLint colorTextureFormat = GL_RGB);
+    explicit Framebuffer(glm::ivec2 resolution, GLint colorTextureInternalFormat, GLint colorTextureFormat, GLint colorTextureType);
     ~Framebuffer();
 
     void Bind() const;
@@ -27,7 +27,9 @@ private:
     void Generate();
 
     glm::ivec2 m_resolution;
-    GLint m_colorTextureFormat;
+    GLint m_colorTextureInternalFormat;
+    GLenum m_colorTextureFormat;
+    GLenum m_colorTextureType;
 
     GLuint m_fbo;
     std::shared_ptr<Texture2D> m_colorTexture;

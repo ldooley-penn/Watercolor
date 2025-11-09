@@ -5,9 +5,11 @@
 #include "Texture2D.h"
 #include "../Utils/Debug.h"
 
-Framebuffer::Framebuffer(glm::ivec2 resolution, GLint colorTextureFormat):
+Framebuffer::Framebuffer(glm::ivec2 resolution, GLint colorTextureInternalFormat, GLint colorTextureFormat, GLint colorTextureType):
     m_resolution(resolution),
+    m_colorTextureInternalFormat(colorTextureInternalFormat),
     m_colorTextureFormat(colorTextureFormat),
+    m_colorTextureType(colorTextureType),
     m_fbo(0),
     m_colorTexture(nullptr),
     m_colorTextureSlot(0)
@@ -51,7 +53,7 @@ void Framebuffer::Generate()
         {GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER},
         {GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER}
     };
-    m_colorTexture = std::make_shared<Texture2D>(m_resolution.x, m_resolution.y, m_colorTextureFormat, textureParameters);
+    m_colorTexture = std::make_shared<Texture2D>(m_resolution.x, m_resolution.y, m_colorTextureInternalFormat, m_colorTextureFormat, m_colorTextureType, textureParameters);
     m_colorTexture->Bind();
 
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_colorTexture->GetTextureID(), 0);

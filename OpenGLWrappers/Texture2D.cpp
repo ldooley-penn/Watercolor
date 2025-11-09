@@ -57,16 +57,18 @@ Texture2D::Texture2D(const std::string &imageFilepath, const std::vector<Texture
     glBindTexture(GL_TEXTURE_2D, 0);
 }
 
-Texture2D::Texture2D(int width, int height, GLint textureFormat, const std::vector<TextureParameter>& textureParameters):
+Texture2D::Texture2D(int width, int height, GLint internalFormat, GLenum format, GLenum type, const std::vector<TextureParameter>& textureParameters):
     m_texture(0),
     m_width(width),
     m_height(height),
-    m_internalFormat(textureFormat),
+    m_internalFormat(internalFormat),
+    m_format(format),
+    m_type(type),
     m_textureSlot(GL_TEXTURE0)
 {
     glGenTextures(1, &m_texture);
     glBindTexture(GL_TEXTURE_2D, m_texture);
-    glTexImage2D(GL_TEXTURE_2D, 0, m_internalFormat, m_width, m_height, 0, m_internalFormat, GL_UNSIGNED_BYTE, nullptr);
+    glTexImage2D(GL_TEXTURE_2D, 0, m_internalFormat, m_width, m_height, 0, m_format, m_type, nullptr);
 
     for (const auto& textureParameter: textureParameters) {
         glTexParameteri(GL_TEXTURE_2D, textureParameter.pname, textureParameter.value);

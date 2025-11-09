@@ -16,8 +16,7 @@
 Application::Application(glm::ivec2 windowSize):
     m_window(nullptr),
     m_defaultProgram(0),
-    m_vao(0),
-    m_vbo(0),
+    m_rgbToLuvProgram(0),
     m_mousePosition(glm::dvec2(0, 0)),
     m_windowSize(windowSize),
     m_fullscreenQuad(nullptr),
@@ -156,6 +155,10 @@ bool Application::Initialize()
 
     m_defaultProgram = ShaderLoader::createShaderProgram("Shaders/Default.vert", "Shaders/Default.frag");
 
+    m_rgbToLuvProgram = ShaderLoader::createShaderProgram("Shaders/RGBtoLUV.vert", "Shaders/RGBtoLUV.frag");
+
+    m_luvToRgbProgram = ShaderLoader::createShaderProgram("Shaders/LUVtoRGB.vert", "Shaders/LUVtoRGB.frag");
+
     m_fullscreenQuad = std::make_unique<FullscreenQuad>();
 
     std::vector<TextureParameter> textureParameters = {
@@ -166,8 +169,8 @@ bool Application::Initialize()
     };
     m_texture = std::make_unique<Texture2D>("Images/mountains.jpg", textureParameters);
 
-    m_framebufferA = std::make_unique<Framebuffer>(m_windowSize);
-    m_framebufferB = std::make_unique<Framebuffer>(m_windowSize);
+    m_framebufferA = std::make_unique<Framebuffer>(m_windowSize, GL_RGBA32F, GL_RGBA, GL_FLOAT);
+    m_framebufferB = std::make_unique<Framebuffer>(m_windowSize, GL_RGBA32F, GL_RGBA, GL_FLOAT);
 
     return true;
 }
@@ -181,10 +184,9 @@ void Application::Tick(double deltaTime)
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    glUseProgram(m_defaultProgram);
-
-    GLint textureUniformLocation = glGetUniformLocation(m_defaultProgram, "myTexture");
-    glUniform1i(textureUniformLocation, 0);
+    glUseProgram(m_rgbToLuvProgram);
+    GLint rgbToLuvTextureUniformLocation = glGetUniformLocation(m_rgbToLuvProgram, "myTexture");
+    glUniform1i(rgbToLuvTextureUniformLocation, 0);
 
     m_texture->Bind(0); // Read Texture
     m_framebufferA->Bind(); // Write Framebuffer
@@ -193,6 +195,11 @@ void Application::Tick(double deltaTime)
     for (int i = 0; i<3; i++) {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         m_fullscreenQuad->Draw();
+        if (i == 0) {
+            glUseProgram(m_defaultProgram);
+            GLint defaultTextureUniformLocation = glGetUniformLocation(m_defaultProgram, "myTexture");
+            glUniform1i(defaultTextureUniformLocation, 0);
+        }
         if (i % 2 == 0) {
             if (m_framebufferA->GetColorTexture().expired()) {
                 std::cerr << "Failed to get color texture!\n";
@@ -210,6 +217,10 @@ void Application::Tick(double deltaTime)
             m_framebufferA->Bind(); // Write Framebuffer
         }
     }
+
+    glUseProgram(m_luvToRgbProgram);
+    GLint luvToRGBTextureUniformLocation = glGetUniformLocation(m_luvToRgbProgram, "myTexture");
+    glUniform1i(luvToRGBTextureUniformLocation, 0);
 
     // Draw to screen
     Framebuffer::Unbind();

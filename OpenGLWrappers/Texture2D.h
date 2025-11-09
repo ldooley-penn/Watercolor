@@ -12,7 +12,7 @@ struct TextureParameter {
 class Texture2D {
 public:
     explicit Texture2D(const std::string& imageFilepath, const std::vector<TextureParameter>& textureParameters);
-    explicit Texture2D(int width, int height, GLint textureFormat, const std::vector<TextureParameter>& textureParameters);
+    explicit Texture2D(int width, int height, GLint internalFormat, GLenum format, GLenum type, const std::vector<TextureParameter>& textureParameters);
     ~Texture2D();
 
     void Bind(int TextureSlot = 0);
@@ -28,6 +28,8 @@ private:
     int m_width;
     int m_height;
     GLint m_internalFormat;
+    GLenum m_format;
+    GLenum m_type;
 
     GLenum m_textureSlot;
 };
