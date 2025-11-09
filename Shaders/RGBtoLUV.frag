@@ -56,4 +56,5 @@ void main(){
     float a = rgba.w;
     vec3 luv = RGBtoLUV(rgb);
     gl_FragColor = vec4(luv,a);
+    //gl_FragColor = rgba;
 }

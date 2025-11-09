@@ -42,7 +42,10 @@ void Application::Run()
     while (!glfwWindowShouldClose(m_window))
     {
         const double currentTime = glfwGetTime();
-        Tick(currentTime - previousTime);
+        const double deltaTime = currentTime - previousTime;
+        std::string windowTitle = std::string("Watercolor Rendering. FPS: ")+std::to_string(1.0 / deltaTime);
+        glfwSetWindowTitle(m_window, windowTitle.c_str());
+        Tick(deltaTime);
         previousTime = currentTime;
     }
 }
@@ -125,7 +128,7 @@ bool Application::Initialize()
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
 
-    m_window = glfwCreateWindow(m_windowSize.x, m_windowSize.y, "Watercolor Rendering", nullptr, nullptr);
+    m_window = glfwCreateWindow(m_windowSize.x, m_windowSize.y, "Watercolor Rendering. FPS: ", nullptr, nullptr);
     if (!m_window)
     {
         std::cerr << "Failed to open GLFW window!\n";
@@ -154,10 +157,9 @@ bool Application::Initialize()
     glViewport(0, 0, m_windowSize.x, m_windowSize.y);
 
     m_defaultProgram = ShaderLoader::createShaderProgram("Shaders/Default.vert", "Shaders/Default.frag");
-
     m_rgbToLuvProgram = ShaderLoader::createShaderProgram("Shaders/RGBtoLUV.vert", "Shaders/RGBtoLUV.frag");
-
     m_luvToRgbProgram = ShaderLoader::createShaderProgram("Shaders/LUVtoRGB.vert", "Shaders/LUVtoRGB.frag");
+    m_meanShiftProgram = ShaderLoader::createShaderProgram("Shaders/MeanShift.vert", "Shaders/MeanShift.frag");
 
     m_fullscreenQuad = std::make_unique<FullscreenQuad>();
 
@@ -182,47 +184,40 @@ void Application::Tick(double deltaTime)
 
     glViewport(0, 0, width, height);
 
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
+    // Convert to LUV
     glUseProgram(m_rgbToLuvProgram);
-    GLint rgbToLuvTextureUniformLocation = glGetUniformLocation(m_rgbToLuvProgram, "myTexture");
+    const GLint rgbToLuvTextureUniformLocation = glGetUniformLocation(m_rgbToLuvProgram, "myTexture");
     glUniform1i(rgbToLuvTextureUniformLocation, 0);
-
     m_texture->Bind(0); // Read Texture
     m_framebufferA->Bind(); // Write Framebuffer
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    m_fullscreenQuad->Draw();
 
-    // Ping-pong framebuffers
-    for (int i = 0; i<3; i++) {
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        m_fullscreenQuad->Draw();
-        if (i == 0) {
-            glUseProgram(m_defaultProgram);
-            GLint defaultTextureUniformLocation = glGetUniformLocation(m_defaultProgram, "myTexture");
-            glUniform1i(defaultTextureUniformLocation, 0);
-        }
-        if (i % 2 == 0) {
-            if (m_framebufferA->GetColorTexture().expired()) {
-                std::cerr << "Failed to get color texture!\n";
-                return;
-            }
-            m_framebufferA->GetColorTexture().lock()->Bind(0); // Read Texture
-            m_framebufferB->Bind(); // Write Framebuffer
-        }
-        else {
-            if (m_framebufferB->GetColorTexture().expired()) {
-                std::cerr << "Failed to get color texture!\n";
-                return;
-            }
-            m_framebufferB->GetColorTexture().lock()->Bind(0); // Read Texture
-            m_framebufferA->Bind(); // Write Framebuffer
-        }
+    // Run mean shift
+    glUseProgram(m_meanShiftProgram);
+    const GLint meanShiftTextureUniformLocation = glGetUniformLocation(m_meanShiftProgram, "myTexture");
+    glUniform1i(meanShiftTextureUniformLocation, 0);
+    if (m_framebufferA->GetColorTexture().expired()) {
+        std::cerr << "Failed to get color texture!\n";
+        return;
     }
+    m_framebufferA->GetColorTexture().lock()->Bind(0); // Read Texture
+    const GLint meanShiftTextureSizeUniformLocation = glGetUniformLocation(m_meanShiftProgram, "myTextureSize");
+    const glm::ivec2 textureSize = m_framebufferA->GetColorTexture().lock()->GetSize();
+    glUniform2f(meanShiftTextureSizeUniformLocation, textureSize.x, textureSize.y);
+    m_framebufferB->Bind(); // Write Framebuffer
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    m_fullscreenQuad->Draw();
 
+    // Convert to RGB and display
     glUseProgram(m_luvToRgbProgram);
-    GLint luvToRGBTextureUniformLocation = glGetUniformLocation(m_luvToRgbProgram, "myTexture");
+    const GLint luvToRGBTextureUniformLocation = glGetUniformLocation(m_luvToRgbProgram, "myTexture");
     glUniform1i(luvToRGBTextureUniformLocation, 0);
-
-    // Draw to screen
+    if (m_framebufferB->GetColorTexture().expired()) {
+        std::cerr << "Failed to get color texture!\n";
+        return;
+    }
+    m_framebufferB->GetColorTexture().lock()->Bind(0); // Read Texture
     Framebuffer::Unbind();
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     m_fullscreenQuad->Draw();

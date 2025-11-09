@@ -4,6 +4,8 @@
 #include <vector>
 #include <glad/glad.h>
 
+#include "glm/vec2.hpp"
+
 struct TextureParameter {
     GLenum pname;
     GLint value;
@@ -20,6 +22,10 @@ public:
 
     [[nodiscard]] GLuint GetTextureID() const {
         return m_texture;
+    }
+
+    [[nodiscard]] glm::ivec2 GetSize() const {
+        return {m_width, m_height};
     }
 
 private:

@@ -43,6 +43,7 @@ private:
     GLuint m_defaultProgram;
     GLuint m_rgbToLuvProgram;
     GLuint m_luvToRgbProgram;
+    GLuint m_meanShiftProgram;
 
     std::unordered_set<int> m_keysPressed;
 

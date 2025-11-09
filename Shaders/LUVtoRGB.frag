@@ -65,4 +65,5 @@ void main(){
     float a = luva.w;
     vec3 rgb = LUVtoRGB(luv);
     gl_FragColor = vec4(rgb, a);
+    //gl_FragColor = luva;
 }
