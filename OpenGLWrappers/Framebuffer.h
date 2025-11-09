@@ -1,8 +1,11 @@
 #pragma once
 
+#include <memory>
 #include <glad/glad.h>
 
 #include "glm/vec2.hpp"
+
+class Texture2D;
 
 class Framebuffer {
     public:
@@ -13,8 +16,9 @@ class Framebuffer {
 
     static void Unbind();
 
-    void BindColorTexture(int TextureSlot = 0);
-    void UnbindColorTexture() const;
+    [[nodiscard]] std::weak_ptr<Texture2D> GetColorTexture() const {
+        return m_colorTexture;
+    }
 
     void Resize(glm::ivec2 resolution);
 
@@ -26,7 +30,7 @@ private:
     GLint m_colorTextureFormat;
 
     GLuint m_fbo;
-    GLuint m_colorTexture;
+    std::shared_ptr<Texture2D> m_colorTexture;
     int m_colorTextureSlot;
 };
 

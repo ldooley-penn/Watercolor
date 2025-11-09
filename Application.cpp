@@ -158,7 +158,13 @@ bool Application::Initialize()
 
     m_fullscreenQuad = std::make_unique<FullscreenQuad>();
 
-    m_texture = std::make_unique<Texture2D>("Images/mountains.jpg");
+    std::vector<TextureParameter> textureParameters = {
+        {GL_TEXTURE_WRAP_S, GL_REPEAT},
+        {GL_TEXTURE_WRAP_T, GL_REPEAT},
+        {GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR},
+        {GL_TEXTURE_MAG_FILTER, GL_LINEAR}
+    };
+    m_texture = std::make_unique<Texture2D>("Images/mountains.jpg", textureParameters);
 
     m_framebufferA = std::make_unique<Framebuffer>(m_windowSize);
     m_framebufferB = std::make_unique<Framebuffer>(m_windowSize);
@@ -185,19 +191,29 @@ void Application::Tick(double deltaTime)
 
     // Ping-pong framebuffers
     for (int i = 0; i<3; i++) {
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         m_fullscreenQuad->Draw();
         if (i % 2 == 0) {
-            m_framebufferA->BindColorTexture(0); // Read Texture
+            if (m_framebufferA->GetColorTexture().expired()) {
+                std::cerr << "Failed to get color texture!\n";
+                return;
+            }
+            m_framebufferA->GetColorTexture().lock()->Bind(0); // Read Texture
             m_framebufferB->Bind(); // Write Framebuffer
         }
         else {
-            m_framebufferB->BindColorTexture(0); // Read Texture
+            if (m_framebufferB->GetColorTexture().expired()) {
+                std::cerr << "Failed to get color texture!\n";
+                return;
+            }
+            m_framebufferB->GetColorTexture().lock()->Bind(0); // Read Texture
             m_framebufferA->Bind(); // Write Framebuffer
         }
     }
 
     // Draw to screen
     Framebuffer::Unbind();
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     m_fullscreenQuad->Draw();
 
     glfwSwapBuffers(m_window);

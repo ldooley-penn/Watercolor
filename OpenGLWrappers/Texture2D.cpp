@@ -8,7 +8,7 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
-Texture2D::Texture2D(const std::string &imageFilepath):
+Texture2D::Texture2D(const std::string &imageFilepath, const std::vector<TextureParameter>& textureParameters):
     m_texture(0),
     m_width(0),
     m_height(0),
@@ -18,10 +18,9 @@ Texture2D::Texture2D(const std::string &imageFilepath):
     glGenTextures(1, &m_texture);
     glBindTexture(GL_TEXTURE_2D, m_texture);
 
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    for (const auto& textureParameter: textureParameters) {
+        glTexParameteri(GL_TEXTURE_2D, textureParameter.pname, textureParameter.value);
+    }
 
     int numChannels;
     stbi_set_flip_vertically_on_load(true);
@@ -54,6 +53,24 @@ Texture2D::Texture2D(const std::string &imageFilepath):
     }
 
     stbi_image_free(imageData);
+
+    glBindTexture(GL_TEXTURE_2D, 0);
+}
+
+Texture2D::Texture2D(int width, int height, GLint textureFormat, const std::vector<TextureParameter>& textureParameters):
+    m_texture(0),
+    m_width(width),
+    m_height(height),
+    m_internalFormat(textureFormat),
+    m_textureSlot(GL_TEXTURE0)
+{
+    glGenTextures(1, &m_texture);
+    glBindTexture(GL_TEXTURE_2D, m_texture);
+    glTexImage2D(GL_TEXTURE_2D, 0, m_internalFormat, m_width, m_height, 0, m_internalFormat, GL_UNSIGNED_BYTE, nullptr);
+
+    for (const auto& textureParameter: textureParameters) {
+        glTexParameteri(GL_TEXTURE_2D, textureParameter.pname, textureParameter.value);
+    }
 
     glBindTexture(GL_TEXTURE_2D, 0);
 }
