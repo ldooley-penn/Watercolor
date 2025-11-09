@@ -11,7 +11,9 @@ add_executable(Watercolor main.cpp
         OpenGLWrappers/Framebuffer.cpp
         OpenGLWrappers/Framebuffer.h
         OpenGLWrappers/FullscreenQuad.cpp
-        OpenGLWrappers/FullscreenQuad.h)
+        OpenGLWrappers/FullscreenQuad.h
+        OpenGLWrappers/Texture2D.cpp
+        OpenGLWrappers/Texture2D.h)
 
 add_subdirectory(${PROJECT_SOURCE_DIR}/Libraries/glfw)
 add_subdirectory(${PROJECT_SOURCE_DIR}/Libraries/glad)
@@ -29,3 +31,4 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 )
 
 file(COPY "${CMAKE_SOURCE_DIR}/Shaders/" DESTINATION "${CMAKE_BINARY_DIR}/Shaders/")
+file(COPY "${CMAKE_SOURCE_DIR}/Images/" DESTINATION "${CMAKE_BINARY_DIR}/Images/")

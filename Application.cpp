@@ -9,6 +9,7 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #include "OpenGLWrappers/FullscreenQuad.h"
+#include "OpenGLWrappers/Texture2D.h"
 #include "Utils/Debug.h"
 
 Application::Application(glm::ivec2 windowSize):
@@ -18,7 +19,8 @@ Application::Application(glm::ivec2 windowSize):
     m_vbo(0),
     m_mousePosition(glm::dvec2(0, 0)),
     m_windowSize(windowSize),
-    m_fullscreenQuad(nullptr)
+    m_fullscreenQuad(nullptr),
+    m_texture(nullptr)
 {
 
 }
@@ -155,6 +157,8 @@ bool Application::Initialize()
 
     m_fullscreenQuad = std::make_unique<FullscreenQuad>();
 
+    m_texture = std::make_unique<Texture2D>("Images/mountains.jpg");
+
     return true;
 }
 
@@ -168,6 +172,10 @@ void Application::Tick(double deltaTime)
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     glUseProgram(m_defaultProgram);
+
+    GLint textureUniformLocation = glGetUniformLocation(m_defaultProgram, "myTexture");
+    glUniform1i(textureUniformLocation, 0);
+    m_texture->Bind(0);
 
     // Draw something
     m_fullscreenQuad->Draw();

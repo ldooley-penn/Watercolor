@@ -7,6 +7,7 @@
 #include <GLFW/glfw3.h>
 #include <glm/vec2.hpp>
 
+class Texture2D;
 class FullscreenQuad;
 
 class Application {
@@ -51,4 +52,6 @@ private:
     glm::ivec2 m_windowSize;
 
     std::unique_ptr<FullscreenQuad> m_fullscreenQuad;
+
+    std::unique_ptr<Texture2D> m_texture;
 };

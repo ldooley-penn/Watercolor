@@ -10,10 +10,10 @@ FullscreenQuad::FullscreenQuad():
     m_ebo(0)
 {
     std::vector<GLfloat> vertexData = {
-        -1.0f, 1.0f, 0.0f, 0.0f, 0.0f,
-        -1.0f, -1.0f, 0.0f, 0.0f, 1.0f,
-        1.0f, -1.0f, 0.0f, 1.0f, 1.0f,
-        1.0f, 1.0f, 0.0f, 1.0f, 0.0f
+        -1.0f, -1.0f, 0.0f, 0.0f, 0.0f,
+        1.0f, -1.0f, 0.0f, 1.0f, 0.0f,
+        1.0f, 1.0f, 0.0f, 1.0f, 1.0f,
+        -1.0f, 1.0f, 0.0f, 0.0f, 1.0f,
     };
 
     std::vector<GLuint> indices = {
