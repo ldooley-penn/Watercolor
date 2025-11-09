@@ -8,6 +8,7 @@
 
 #include <glm/gtc/type_ptr.hpp>
 
+#include "OpenGLWrappers/Framebuffer.h"
 #include "OpenGLWrappers/FullscreenQuad.h"
 #include "OpenGLWrappers/Texture2D.h"
 #include "Utils/Debug.h"
@@ -109,6 +110,8 @@ void Application::UpdateFramebufferSize(const int width, const int height)
     m_windowSize = glm::ivec2(width, height);
 
     glViewport(0, 0, m_windowSize.x, m_windowSize.y);
+    m_framebufferA->Resize(m_windowSize);
+    m_framebufferB->Resize(m_windowSize);
 }
 
 bool Application::Initialize()
@@ -151,13 +154,14 @@ bool Application::Initialize()
 
     glViewport(0, 0, m_windowSize.x, m_windowSize.y);
 
-    glEnable(GL_DEPTH_TEST);
-
     m_defaultProgram = ShaderLoader::createShaderProgram("Shaders/Default.vert", "Shaders/Default.frag");
 
     m_fullscreenQuad = std::make_unique<FullscreenQuad>();
 
     m_texture = std::make_unique<Texture2D>("Images/mountains.jpg");
+
+    m_framebufferA = std::make_unique<Framebuffer>(m_windowSize);
+    m_framebufferB = std::make_unique<Framebuffer>(m_windowSize);
 
     return true;
 }
@@ -175,9 +179,25 @@ void Application::Tick(double deltaTime)
 
     GLint textureUniformLocation = glGetUniformLocation(m_defaultProgram, "myTexture");
     glUniform1i(textureUniformLocation, 0);
-    m_texture->Bind(0);
 
-    // Draw something
+    m_texture->Bind(0); // Read Texture
+    m_framebufferA->Bind(); // Write Framebuffer
+
+    // Ping-pong framebuffers
+    for (int i = 0; i<3; i++) {
+        m_fullscreenQuad->Draw();
+        if (i % 2 == 0) {
+            m_framebufferA->BindColorTexture(0); // Read Texture
+            m_framebufferB->Bind(); // Write Framebuffer
+        }
+        else {
+            m_framebufferB->BindColorTexture(0); // Read Texture
+            m_framebufferA->Bind(); // Write Framebuffer
+        }
+    }
+
+    // Draw to screen
+    Framebuffer::Unbind();
     m_fullscreenQuad->Draw();
 
     glfwSwapBuffers(m_window);

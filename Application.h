@@ -7,12 +7,13 @@
 #include <GLFW/glfw3.h>
 #include <glm/vec2.hpp>
 
+class Framebuffer;
 class Texture2D;
 class FullscreenQuad;
 
 class Application {
 public:
-    Application(glm::ivec2 windowSize = glm::ivec2(640, 480));
+    explicit Application(glm::ivec2 windowSize = glm::ivec2(640, 480));
     ~Application();
 
     void Run();
@@ -54,4 +55,7 @@ private:
     std::unique_ptr<FullscreenQuad> m_fullscreenQuad;
 
     std::unique_ptr<Texture2D> m_texture;
+
+    std::unique_ptr<Framebuffer> m_framebufferA;
+    std::unique_ptr<Framebuffer> m_framebufferB;
 };
