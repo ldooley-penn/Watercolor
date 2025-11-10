@@ -6,59 +6,57 @@ uniform vec2 myTextureSize;
 
 in vec2 fUV;
 
-const int kernelRadius = 5;
+const int spatialRadius = 5;
+const float colorRadius = 0.75f;
 
-vec2 GetCenterOfMass(vec2 pixelSize, vec2 UV0){
-    float sum = 0.0;
-    vec2 comUV = vec2(0.0);
-    for(int dx = -kernelRadius; dx <= kernelRadius; dx++){
-        for(int dy = -kernelRadius; dy <= kernelRadius; dy++){
-            vec2 uv = UV0 + pixelSize * vec2(float(dx), float(dy));
-            if(uv.x >= 0 && uv.x <= 1 && uv.y >= 0 && uv.y <= 1){
-                vec3 LUV = texture(myTexture, uv).xyz;
-                float L = LUV.x;
-                sum += L;
-                comUV += L * uv;
-            }
-        }
-    }
+struct CenterOfMass
+{
+    vec2 UV;
+    vec3 Color;
+};
 
-    if(sum == 0.0){
-        return UV0;
-    }
+CenterOfMass GetCenterOfMass(vec2 pixelSize, CenterOfMass searchCenter){
+    CenterOfMass result = searchCenter;
 
-    return comUV / sum;
-}
-
-vec3 GetMeanValue(vec2 pixelSize, vec2 UV){
-    vec3 sum = vec3(0.0);
+    vec2 UVSum = vec2(0.0);
+    vec3 ColorSum = vec3(0.0);
     float weight = 0.0;
-    for(int dx = -kernelRadius; dx <= kernelRadius; dx++){
-        for(int dy = -kernelRadius; dy <= kernelRadius; dy++){
-            vec2 uv = UV + pixelSize * vec2(float(dx), float(dy));
-            if(uv.x >= 0 && uv.x <= 1 && uv.y >= 0 && uv.y <= 1){
-                sum += texture(myTexture, uv).xyz;
-                weight += 1.0;
+
+    for(int dx = -spatialRadius; dx <= spatialRadius; dx++){
+        for(int dy = -spatialRadius; dy <= spatialRadius; dy++){
+            vec2 UVNeighbor = searchCenter.UV + pixelSize * vec2(float(dx), float(dy));
+            if(UVNeighbor.x >= 0 && UVNeighbor.x <= 1 && UVNeighbor.y >= 0 && UVNeighbor.y <= 1){
+                vec3 neighborColor = texture(myTexture, UVNeighbor).xyz;
+                if(length(neighborColor - searchCenter.Color) < colorRadius){
+                    ColorSum += neighborColor;
+                    weight += 1.0;
+                }
             }
         }
     }
 
     if(weight == 0.0){
-        return vec3(0.0);
+        return result;
     }
 
-    return sum / weight;
+    result.UV = UVSum / weight;
+    result.Color = ColorSum / weight;
+
+    return result;
 }
 
 vec3 MeanShift(){
     vec2 pixelSize = vec2(1.0) / myTextureSize;
 
-    vec2 meanUV = fUV;
+    CenterOfMass centerOfMass;
+    centerOfMass.UV = fUV;
+    centerOfMass.Color = texture(myTexture, fUV).xyz;
+
     for(int i = 0; i < 10; i++){
-        meanUV = GetCenterOfMass(pixelSize, meanUV);
+        centerOfMass = GetCenterOfMass(pixelSize, centerOfMass);
     }
 
-    return GetMeanValue(pixelSize, meanUV);
+    return centerOfMass.Color;
 }
 
 void main(){
