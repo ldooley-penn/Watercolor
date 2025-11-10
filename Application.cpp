@@ -11,6 +11,11 @@
 #include "OpenGLWrappers/Framebuffer.h"
 #include "OpenGLWrappers/FullscreenQuad.h"
 #include "OpenGLWrappers/Texture2D.h"
+
+#include <imgui.h>
+#include <backends/imgui_impl_glfw.h>
+#include <backends/imgui_impl_opengl3.h>
+
 #include "Utils/Debug.h"
 
 Application::Application(glm::ivec2 windowSize):
@@ -174,11 +179,30 @@ bool Application::Initialize()
     m_framebufferA = std::make_unique<Framebuffer>(m_windowSize, GL_RGBA32F, GL_RGBA, GL_FLOAT);
     m_framebufferB = std::make_unique<Framebuffer>(m_windowSize, GL_RGBA32F, GL_RGBA, GL_FLOAT);
 
+    // Set up imgui
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGuiIO& io = ImGui::GetIO();
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+    ImGui_ImplGlfw_InitForOpenGL(m_window, true);
+    ImGui_ImplOpenGL3_Init();
+
     return true;
 }
 
 void Application::Tick(double deltaTime)
 {
+    ImGui_ImplOpenGL3_NewFrame();
+    ImGui_ImplGlfw_NewFrame();
+    ImGui::NewFrame();
+
+    ImGui::SetNextWindowPos(ImVec2(0, 0));
+    ImGui::SetNextWindowSize(ImVec2(200, 100));
+    ImGui::Begin("Settings");
+    float radius;
+    ImGui::InputFloat("Value", &radius, 0.1f, 1.0f, "%.2f");
+    ImGui::End();
+
     int width, height;
     glfwGetFramebufferSize(m_window, &width, &height);
 
@@ -221,6 +245,9 @@ void Application::Tick(double deltaTime)
     Framebuffer::Unbind();
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     m_fullscreenQuad->Draw();
+
+    ImGui::Render();
+    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
     glfwSwapBuffers(m_window);
     glfwPollEvents();
