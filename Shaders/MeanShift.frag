@@ -4,10 +4,11 @@ uniform sampler2D myTexture;
 
 uniform vec2 myTextureSize;
 
-in vec2 fUV;
+uniform int spatialRadius;
+uniform float colorRadius;
+uniform int iterationCount;
 
-const int spatialRadius = 5;
-const float colorRadius = 0.75f;
+in vec2 fUV;
 
 struct CenterOfMass
 {
@@ -52,7 +53,7 @@ vec3 MeanShift(){
     centerOfMass.UV = fUV;
     centerOfMass.Color = texture(myTexture, fUV).xyz;
 
-    for(int i = 0; i < 10; i++){
+    for(int i = 0; i < iterationCount; i++){
         centerOfMass = GetCenterOfMass(pixelSize, centerOfMass);
     }
 

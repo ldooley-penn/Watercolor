@@ -59,4 +59,8 @@ private:
 
     std::unique_ptr<Framebuffer> m_framebufferA;
     std::unique_ptr<Framebuffer> m_framebufferB;
+
+    int m_spatialRadius = 1;
+    float m_colorRadius = 0.75f;
+    int m_iterationCount = 10;
 };

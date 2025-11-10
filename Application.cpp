@@ -199,8 +199,9 @@ void Application::Tick(double deltaTime)
     ImGui::SetNextWindowPos(ImVec2(0, 0));
     ImGui::SetNextWindowSize(ImVec2(200, 100));
     ImGui::Begin("Settings");
-    float radius;
-    ImGui::InputFloat("Value", &radius, 0.1f, 1.0f, "%.2f");
+    ImGui::InputInt("Spatial Radius", &m_spatialRadius, 1, 5);
+    ImGui::InputFloat("Color Radius", &m_colorRadius, 0.125, 1);
+    ImGui::InputInt("Iteration Count", &m_iterationCount, 1, 5);
     ImGui::End();
 
     int width, height;
@@ -228,6 +229,12 @@ void Application::Tick(double deltaTime)
     m_framebufferA->GetColorTexture().lock()->Bind(0); // Read Texture
     const GLint meanShiftTextureSizeUniformLocation = glGetUniformLocation(m_meanShiftProgram, "myTextureSize");
     const glm::ivec2 textureSize = m_framebufferA->GetColorTexture().lock()->GetSize();
+    const GLint meanShiftSpatialRadiusUniformLocation = glGetUniformLocation(m_meanShiftProgram, "spatialRadius");
+    glUniform1i(meanShiftSpatialRadiusUniformLocation, m_spatialRadius);
+    const GLint meanShiftColorRadiusUniformLocation = glGetUniformLocation(m_meanShiftProgram, "colorRadius");
+    glUniform1f(meanShiftColorRadiusUniformLocation, m_colorRadius);
+    const GLint meanShiftIterationCountUniformLocation = glGetUniformLocation(m_meanShiftProgram, "iterationCount");
+    glUniform1i(meanShiftIterationCountUniformLocation, m_iterationCount);
     glUniform2f(meanShiftTextureSizeUniformLocation, textureSize.x, textureSize.y);
     m_framebufferB->Bind(); // Write Framebuffer
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
