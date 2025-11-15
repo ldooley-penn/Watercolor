@@ -42,14 +42,22 @@ Texture2D::Texture2D(const std::string &imageFilepath, const std::vector<Texture
             std::cout << "Image at " << imageFilepath << "has an unsupported number of channels: " << numChannels << std::endl;
             break;
     }
+    int bytesPerRow = m_width * numChannels;
+    if (bytesPerRow % 4 != 0) {
+        glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+    }
+    else {
+        glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
+    }
     if (imageData)
     {
-        glTexImage2D(GL_TEXTURE_2D, 0, m_internalFormat, m_width, m_height, 0, GL_RGB, GL_UNSIGNED_BYTE, imageData);
+        glTexImage2D(GL_TEXTURE_2D, 0, m_internalFormat, m_width, m_height, 0, m_internalFormat, GL_UNSIGNED_BYTE, imageData);
         glGenerateMipmap(GL_TEXTURE_2D);
     }
     else
     {
-        std::cout << "Failed to load texture \n";
+        const char* reason = stbi_failure_reason();
+        std::cout << "Failed to load texture:"<<reason<<std::endl;
     }
 
     stbi_image_free(imageData);

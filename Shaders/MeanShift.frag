@@ -26,9 +26,10 @@ CenterOfMass GetCenterOfMass(vec2 pixelSize, CenterOfMass searchCenter){
     for(int dx = -spatialRadius; dx <= spatialRadius; dx++){
         for(int dy = -spatialRadius; dy <= spatialRadius; dy++){
             vec2 UVNeighbor = searchCenter.UV + pixelSize * vec2(float(dx), float(dy));
-            if(UVNeighbor.x >= 0 && UVNeighbor.x <= 1 && UVNeighbor.y >= 0 && UVNeighbor.y <= 1){
+            if(UVNeighbor.x >= 0.0 && UVNeighbor.x <= 1.0 && UVNeighbor.y >= 0.0 && UVNeighbor.y <= 1.0){
                 vec3 neighborColor = texture(myTexture, UVNeighbor).xyz;
                 if(length(neighborColor - searchCenter.Color) < colorRadius){
+                    UVSum += UVNeighbor;
                     ColorSum += neighborColor;
                     weight += 1.0;
                 }

@@ -174,7 +174,7 @@ bool Application::Initialize()
         {GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR},
         {GL_TEXTURE_MAG_FILTER, GL_LINEAR}
     };
-    m_texture = std::make_unique<Texture2D>("Images/mountains.jpg", textureParameters);
+    m_texture = std::make_unique<Texture2D>("Images/if-you-give-a-mouse-a-cookie-he-will-draw-this-image.png", textureParameters);
 
     m_framebufferA = std::make_unique<Framebuffer>(m_windowSize, GL_RGBA32F, GL_RGBA, GL_FLOAT);
     m_framebufferB = std::make_unique<Framebuffer>(m_windowSize, GL_RGBA32F, GL_RGBA, GL_FLOAT);
