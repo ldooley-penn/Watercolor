@@ -18,14 +18,16 @@
 
 #include "Utils/Debug.h"
 
-Application::Application(glm::ivec2 windowSize):
+Application::Application(glm::ivec2 windowSize) :
     m_window(nullptr),
     m_defaultProgram(0),
-    m_rgbToLuvProgram(0),
+    m_rgbToLuvProgram(0), m_luvToRgbProgram(0), m_meanShiftProgram(0),
+    m_gradientProgram(0),
     m_mousePosition(glm::dvec2(0, 0)),
     m_windowSize(windowSize),
     m_fullscreenQuad(nullptr),
-    m_texture(nullptr)
+    m_texture(nullptr),
+    m_paperTexture(nullptr)
 {
 
 }
@@ -159,12 +161,12 @@ bool Application::Initialize()
 
     glClearColor(0.5f, 1.0f, 0.75f, 1.0f);
 
-    glViewport(0, 0, m_windowSize.x, m_windowSize.y);
-
     m_defaultProgram = ShaderLoader::createShaderProgram("Shaders/Default.vert", "Shaders/Default.frag");
     m_rgbToLuvProgram = ShaderLoader::createShaderProgram("Shaders/RGBtoLUV.vert", "Shaders/RGBtoLUV.frag");
     m_luvToRgbProgram = ShaderLoader::createShaderProgram("Shaders/LUVtoRGB.vert", "Shaders/LUVtoRGB.frag");
     m_meanShiftProgram = ShaderLoader::createShaderProgram("Shaders/MeanShift.vert", "Shaders/MeanShift.frag");
+    m_gradientProgram = ShaderLoader::createShaderProgram("Shaders/Gradient.vert", "Shaders/Gradient.frag");
+    m_wobbleProgram = ShaderLoader::createShaderProgram("Shaders/Wobble.vert", "Shaders/Wobble.frag");
 
     m_fullscreenQuad = std::make_unique<FullscreenQuad>();
 
@@ -174,10 +176,12 @@ bool Application::Initialize()
         {GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR},
         {GL_TEXTURE_MAG_FILTER, GL_LINEAR}
     };
-    m_texture = std::make_unique<Texture2D>("Images/if-you-give-a-mouse-a-cookie-he-will-draw-this-image.png", textureParameters);
+    m_texture = std::make_unique<Texture2D>("Images/mountains.jpg", textureParameters);
+    m_paperTexture = std::make_unique<Texture2D>("Images/SeamlessPaperTexture.jpg", textureParameters);
 
     m_framebufferA = std::make_unique<Framebuffer>(m_windowSize, GL_RGBA32F, GL_RGBA, GL_FLOAT);
     m_framebufferB = std::make_unique<Framebuffer>(m_windowSize, GL_RGBA32F, GL_RGBA, GL_FLOAT);
+    m_paperTextureGradient = std::make_unique<Framebuffer>(m_paperTexture->GetSize(), GL_RGBA32F, GL_RGBA, GL_FLOAT);
 
     // Set up imgui
     IMGUI_CHECKVERSION();
@@ -186,6 +190,21 @@ bool Application::Initialize()
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
     ImGui_ImplGlfw_InitForOpenGL(m_window, true);
     ImGui_ImplOpenGL3_Init();
+
+    ImGui::SetNextWindowPos(ImVec2(0, 0));
+    ImGui::SetNextWindowSize(ImVec2(400, 200));
+
+    // Generate gradient texture
+    glViewport(0, 0, m_paperTexture->GetSize().x, m_paperTexture->GetSize().y);
+    glUseProgram(m_gradientProgram);
+    const GLint gradientTextureUniformLocation = glGetUniformLocation(m_gradientProgram, "myTexture");
+    glUniform1i(gradientTextureUniformLocation, 0);
+    m_paperTexture->Bind(0); // Read Texture
+    m_paperTextureGradient->Bind(); // Write Framebuffer
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    m_fullscreenQuad->Draw();
+
+    glViewport(0, 0, m_windowSize.x, m_windowSize.y);
 
     return true;
 }
@@ -196,18 +215,15 @@ void Application::Tick(double deltaTime)
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
 
-    ImGui::SetNextWindowPos(ImVec2(0, 0));
-    ImGui::SetNextWindowSize(ImVec2(200, 100));
     ImGui::Begin("Settings");
     ImGui::InputInt("Spatial Radius", &m_spatialRadius, 1, 5);
     ImGui::InputFloat("Color Radius", &m_colorRadius, 0.125, 1);
     ImGui::InputInt("Iteration Count", &m_iterationCount, 1, 5);
+    ImGui::InputFloat("Wobble Magnitude", &m_wobbleMagnitude, 0.01, 1);
     ImGui::End();
 
     int width, height;
     glfwGetFramebufferSize(m_window, &width, &height);
-
-    glViewport(0, 0, width, height);
 
     // Convert to LUV
     glUseProgram(m_rgbToLuvProgram);
@@ -249,6 +265,41 @@ void Application::Tick(double deltaTime)
         return;
     }
     m_framebufferB->GetColorTexture().lock()->Bind(0); // Read Texture
+    m_framebufferA->Bind(); // Write framebuffer
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    m_fullscreenQuad->Draw();
+
+    /* Uncomment to visualize paper gradient
+    glUseProgram(m_defaultProgram);
+    const GLint defaultTextureUniformLocation = glGetUniformLocation(m_defaultProgram, "myTexture");
+    glUniform1i(defaultTextureUniformLocation, 0);
+    if (m_paperTextureGradient->GetColorTexture().expired()) {
+        std::cerr << "Failed to get color texture!\n";
+        return;
+    }
+    m_paperTextureGradient->GetColorTexture().lock()->Bind(0);
+    Framebuffer::Unbind();
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    m_fullscreenQuad->Draw();
+    */
+
+    glUseProgram(m_wobbleProgram);
+    const GLint wobbleTextureUniformLocation = glGetUniformLocation(m_wobbleProgram, "myTexture");
+    glUniform1i(wobbleTextureUniformLocation, 0);
+    const GLint wobbleGradientTextureUniformLocation = glGetUniformLocation(m_wobbleProgram, "gradientTexture");
+    glUniform1i(wobbleGradientTextureUniformLocation, 1);
+    const GLint wobbleMagnitudeUniformLocation = glGetUniformLocation(m_wobbleProgram, "wobbleMagnitude");
+    glUniform1f(wobbleMagnitudeUniformLocation, m_wobbleMagnitude);
+    if (m_framebufferA->GetColorTexture().expired()) {
+        std::cerr << "Failed to get color texture!\n";
+        return;
+    }
+    m_framebufferA->GetColorTexture().lock()->Bind(0);
+    if (m_paperTextureGradient->GetColorTexture().expired()) {
+        std::cerr << "Failed to get color texture!\n";
+        return;
+    }
+    m_paperTextureGradient->GetColorTexture().lock()->Bind(1);
     Framebuffer::Unbind();
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     m_fullscreenQuad->Draw();

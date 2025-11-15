@@ -44,6 +44,8 @@ private:
     GLuint m_rgbToLuvProgram;
     GLuint m_luvToRgbProgram;
     GLuint m_meanShiftProgram;
+    GLuint m_gradientProgram;
+    GLuint m_wobbleProgram;
 
     std::unordered_set<int> m_keysPressed;
 
@@ -56,6 +58,8 @@ private:
     std::unique_ptr<FullscreenQuad> m_fullscreenQuad;
 
     std::unique_ptr<Texture2D> m_texture;
+    std::unique_ptr<Texture2D> m_paperTexture;
+    std::unique_ptr<Framebuffer> m_paperTextureGradient;
 
     std::unique_ptr<Framebuffer> m_framebufferA;
     std::unique_ptr<Framebuffer> m_framebufferB;
@@ -63,4 +67,5 @@ private:
     int m_spatialRadius = 1;
     float m_colorRadius = 0.75f;
     int m_iterationCount = 10;
+    float m_wobbleMagnitude = 0.01f;
 };

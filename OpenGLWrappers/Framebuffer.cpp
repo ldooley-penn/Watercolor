@@ -50,8 +50,8 @@ void Framebuffer::Generate()
     std::vector<TextureParameter> textureParameters = {
         {GL_TEXTURE_MIN_FILTER, GL_LINEAR},
         {GL_TEXTURE_MAG_FILTER, GL_LINEAR},
-        {GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER},
-        {GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER}
+        {GL_TEXTURE_WRAP_S, GL_REPEAT},
+        {GL_TEXTURE_WRAP_T, GL_REPEAT}
     };
     m_colorTexture = std::make_shared<Texture2D>(m_resolution.x, m_resolution.y, m_colorTextureInternalFormat, m_colorTextureFormat, m_colorTextureType, textureParameters);
     m_colorTexture->Bind();
