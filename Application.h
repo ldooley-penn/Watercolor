@@ -64,10 +64,10 @@ private:
     std::unique_ptr<Framebuffer> m_framebufferA;
     std::unique_ptr<Framebuffer> m_framebufferB;
 
-    int m_spatialRadius = 1;
+    int m_spatialRadius = 5;
     float m_colorRadius = 0.75f;
-    int m_iterationCount = 10;
-    glm::vec2 m_wobbleMagnitude = glm::vec2(0.1f);
-    glm::vec2 m_wobbleOffset = glm::vec2(0.0f);
+    int m_iterationCount = 5;
+    glm::vec2 m_wobbleMagnitude = glm::vec2(10.f);
+    glm::vec2 m_wobbleOffset = glm::vec2(0.0f, -1.0f);
     glm::vec2 m_wobbleTextureScale = glm::vec2(1.0f);
 };
