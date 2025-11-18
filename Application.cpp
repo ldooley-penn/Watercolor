@@ -170,18 +170,40 @@ bool Application::Initialize()
 
     m_fullscreenQuad = std::make_unique<FullscreenQuad>();
 
-    std::vector<TextureParameter> textureParameters = {
+    std::vector<TextureParameter> textureParametersClampToBorder = {
+        {GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER},
+        {GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER},
+        {GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR},
+        {GL_TEXTURE_MAG_FILTER, GL_LINEAR}
+    };
+
+    std::vector<TextureParameter> textureParametersRepeat = {
         {GL_TEXTURE_WRAP_S, GL_REPEAT},
         {GL_TEXTURE_WRAP_T, GL_REPEAT},
         {GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR},
         {GL_TEXTURE_MAG_FILTER, GL_LINEAR}
     };
-    m_texture = std::make_unique<Texture2D>("Images/mountains.jpg", textureParameters);
-    m_paperTexture = std::make_unique<Texture2D>("Images/SeamlessPaperTexture.jpg", textureParameters);
 
-    m_framebufferA = std::make_unique<Framebuffer>(m_windowSize, GL_RGBA32F, GL_RGBA, GL_FLOAT);
-    m_framebufferB = std::make_unique<Framebuffer>(m_windowSize, GL_RGBA32F, GL_RGBA, GL_FLOAT);
-    m_paperTextureGradient = std::make_unique<Framebuffer>(m_paperTexture->GetSize(), GL_RGBA32F, GL_RGBA, GL_FLOAT);
+    std::vector<TextureParameter> textureParametersNoMipmapClampToBorder = {
+        {GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER},
+        {GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER},
+        {GL_TEXTURE_MIN_FILTER, GL_LINEAR},
+        {GL_TEXTURE_MAG_FILTER, GL_LINEAR}
+    };
+
+    std::vector<TextureParameter> textureParametersNoMipmapRepeat = {
+        {GL_TEXTURE_WRAP_S, GL_REPEAT},
+        {GL_TEXTURE_WRAP_T, GL_REPEAT},
+        {GL_TEXTURE_MIN_FILTER, GL_LINEAR},
+        {GL_TEXTURE_MAG_FILTER, GL_LINEAR}
+    };
+
+    m_texture = std::make_unique<Texture2D>("Images/mountains.jpg", textureParametersClampToBorder);
+    m_paperTexture = std::make_unique<Texture2D>("Images/SeamlessPaperTexture.jpg", textureParametersRepeat);
+
+    m_framebufferA = std::make_unique<Framebuffer>(m_windowSize, GL_RGBA32F, GL_RGBA, GL_FLOAT, textureParametersNoMipmapClampToBorder);
+    m_framebufferB = std::make_unique<Framebuffer>(m_windowSize, GL_RGBA32F, GL_RGBA, GL_FLOAT, textureParametersNoMipmapClampToBorder);
+    m_paperTextureGradient = std::make_unique<Framebuffer>(m_paperTexture->GetSize(), GL_RGBA32F, GL_RGBA, GL_FLOAT, textureParametersNoMipmapRepeat);
 
     // Set up imgui
     IMGUI_CHECKVERSION();
@@ -192,7 +214,7 @@ bool Application::Initialize()
     ImGui_ImplOpenGL3_Init();
 
     ImGui::SetNextWindowPos(ImVec2(0, 0));
-    ImGui::SetNextWindowSize(ImVec2(400, 200));
+    ImGui::SetNextWindowSize(ImVec2(400, 300));
 
     // Generate gradient texture
     glViewport(0, 0, m_paperTexture->GetSize().x, m_paperTexture->GetSize().y);
@@ -219,7 +241,9 @@ void Application::Tick(double deltaTime)
     ImGui::InputInt("Spatial Radius", &m_spatialRadius, 1, 5);
     ImGui::InputFloat("Color Radius", &m_colorRadius, 0.125, 1);
     ImGui::InputInt("Iteration Count", &m_iterationCount, 1, 5);
-    ImGui::InputFloat("Wobble Magnitude", &m_wobbleMagnitude, 0.01, 1);
+    ImGui::InputFloat2("Wobble Magnitude", &m_wobbleMagnitude[0]);
+    ImGui::InputFloat2("Gradient Offset", &m_wobbleOffset[0]);
+    ImGui::InputFloat2("Wobble Texture Scale", &m_wobbleTextureScale[0]);
     ImGui::End();
 
     int width, height;
@@ -289,7 +313,11 @@ void Application::Tick(double deltaTime)
     const GLint wobbleGradientTextureUniformLocation = glGetUniformLocation(m_wobbleProgram, "gradientTexture");
     glUniform1i(wobbleGradientTextureUniformLocation, 1);
     const GLint wobbleMagnitudeUniformLocation = glGetUniformLocation(m_wobbleProgram, "wobbleMagnitude");
-    glUniform1f(wobbleMagnitudeUniformLocation, m_wobbleMagnitude);
+    glUniform2f(wobbleMagnitudeUniformLocation, m_wobbleMagnitude.x, m_wobbleMagnitude.y);
+    const GLint gradientOffsetUniformLocation = glGetUniformLocation(m_wobbleProgram, "gradientOffset");
+    glUniform2f(gradientOffsetUniformLocation, m_wobbleOffset.x, m_wobbleOffset.y);
+    const GLint wobbleTextureScaleUniformLocation = glGetUniformLocation(m_wobbleProgram, "wobbleTextureScale");
+    glUniform2f(wobbleTextureScaleUniformLocation, m_wobbleTextureScale.x, m_wobbleTextureScale.y);
     if (m_framebufferA->GetColorTexture().expired()) {
         std::cerr << "Failed to get color texture!\n";
         return;

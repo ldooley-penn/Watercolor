@@ -5,14 +5,15 @@
 #include "Texture2D.h"
 #include "../Utils/Debug.h"
 
-Framebuffer::Framebuffer(glm::ivec2 resolution, GLint colorTextureInternalFormat, GLint colorTextureFormat, GLint colorTextureType):
+Framebuffer::Framebuffer(glm::ivec2 resolution, GLint colorTextureInternalFormat, GLint colorTextureFormat, GLint colorTextureType, const std::vector<TextureParameter>& colorTextureParameters):
     m_resolution(resolution),
     m_colorTextureInternalFormat(colorTextureInternalFormat),
     m_colorTextureFormat(colorTextureFormat),
     m_colorTextureType(colorTextureType),
     m_fbo(0),
     m_colorTexture(nullptr),
-    m_colorTextureSlot(0)
+    m_colorTextureSlot(0),
+    m_colorTextureParameters(colorTextureParameters)
 {
     Generate();
 }
@@ -47,13 +48,7 @@ void Framebuffer::Generate()
     glGenFramebuffers(1, &m_fbo);
     glBindFramebuffer(GL_FRAMEBUFFER, m_fbo);
 
-    std::vector<TextureParameter> textureParameters = {
-        {GL_TEXTURE_MIN_FILTER, GL_LINEAR},
-        {GL_TEXTURE_MAG_FILTER, GL_LINEAR},
-        {GL_TEXTURE_WRAP_S, GL_REPEAT},
-        {GL_TEXTURE_WRAP_T, GL_REPEAT}
-    };
-    m_colorTexture = std::make_shared<Texture2D>(m_resolution.x, m_resolution.y, m_colorTextureInternalFormat, m_colorTextureFormat, m_colorTextureType, textureParameters);
+    m_colorTexture = std::make_shared<Texture2D>(m_resolution.x, m_resolution.y, m_colorTextureInternalFormat, m_colorTextureFormat, m_colorTextureType, m_colorTextureParameters);
     m_colorTexture->Bind();
 
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_colorTexture->GetTextureID(), 0);

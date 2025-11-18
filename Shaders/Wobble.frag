@@ -2,20 +2,24 @@
 
 uniform sampler2D myTexture;
 uniform sampler2D gradientTexture;
-uniform float wobbleMagnitude;
+uniform vec2 wobbleMagnitude;
+uniform vec2 gradientOffset;
+uniform vec2 wobbleTextureScale;
 
 in vec2 fUV;
 
 vec4 getWobbledColor(){
-    vec2 pixelSize = vec2(1.0) / vec2(textureSize(myTexture, 0));
+    vec2 sampleTextureSize = vec2(textureSize(myTexture, 0));
     vec2 gradientTextureSize = vec2(textureSize(gradientTexture, 0));
-    vec2 currentPixel = vec2(gl_FragCoord.x, gl_FragCoord.y);
+    float gradientTextureAspectRatio = gradientTextureSize.x/gradientTextureSize.y;
 
-    vec4 gradient = texture(gradientTexture, currentPixel/gradientTextureSize);
-    float Gx = gradient.x;
-    float Gy = gradient.y;
+    vec2 gradientUV = vec2(fUV.x, fUV.y * gradientTextureSize.x / sampleTextureSize.x) / wobbleTextureScale;
 
-    return texture(myTexture, fUV + wobbleMagnitude * vec2(Gx, Gy));
+    vec2 gradient = texture(gradientTexture, gradientUV).xy + gradientOffset;
+
+    vec2 sampleUV = fUV + wobbleMagnitude * gradient / sampleTextureSize;
+
+    return texture(myTexture, sampleUV);
 }
 
 void main(){

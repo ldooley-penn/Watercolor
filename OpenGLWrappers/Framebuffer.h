@@ -3,13 +3,14 @@
 #include <memory>
 #include <glad/glad.h>
 
+#include "Texture2D.h"
 #include "glm/vec2.hpp"
 
 class Texture2D;
 
 class Framebuffer {
     public:
-    explicit Framebuffer(glm::ivec2 resolution, GLint colorTextureInternalFormat, GLint colorTextureFormat, GLint colorTextureType);
+    explicit Framebuffer(glm::ivec2 resolution, GLint colorTextureInternalFormat, GLint colorTextureFormat, GLint colorTextureType, const std::vector<TextureParameter>& colorTextureParameters);
     ~Framebuffer();
 
     void Bind() const;
@@ -34,5 +35,6 @@ private:
     GLuint m_fbo;
     std::shared_ptr<Texture2D> m_colorTexture;
     int m_colorTextureSlot;
+    std::vector<TextureParameter> m_colorTextureParameters;
 };
 
