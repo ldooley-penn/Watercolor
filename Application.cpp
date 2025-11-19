@@ -167,6 +167,7 @@ bool Application::Initialize()
     m_meanShiftProgram = ShaderLoader::createShaderProgram("Shaders/MeanShift.vert", "Shaders/MeanShift.frag");
     m_gradientProgram = ShaderLoader::createShaderProgram("Shaders/Gradient.vert", "Shaders/Gradient.frag");
     m_wobbleProgram = ShaderLoader::createShaderProgram("Shaders/Wobble.vert", "Shaders/Wobble.frag");
+    m_edgeDarkeningProgram = ShaderLoader::createShaderProgram("Shaders/EdgeDarkening.vert", "Shaders/EdgeDarkening.frag");
 
     m_fullscreenQuad = std::make_unique<FullscreenQuad>();
 
@@ -244,6 +245,7 @@ void Application::Tick(double deltaTime)
     ImGui::InputFloat2("Wobble Magnitude", &m_wobbleMagnitude[0]);
     ImGui::InputFloat2("Gradient Offset", &m_wobbleOffset[0]);
     ImGui::InputFloat2("Wobble Texture Scale", &m_wobbleTextureScale[0]);
+    ImGui::InputFloat("Edge Darkening Magnitude", &m_edgeDarkeningMagnitude, 0.5, 2.0);
     ImGui::End();
 
     int width, height;
@@ -280,7 +282,7 @@ void Application::Tick(double deltaTime)
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     m_fullscreenQuad->Draw();
 
-    // Convert to RGB and display
+    // Convert to RGB
     glUseProgram(m_luvToRgbProgram);
     const GLint luvToRGBTextureUniformLocation = glGetUniformLocation(m_luvToRgbProgram, "myTexture");
     glUniform1i(luvToRGBTextureUniformLocation, 0);
@@ -293,20 +295,7 @@ void Application::Tick(double deltaTime)
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     m_fullscreenQuad->Draw();
 
-    /* Uncomment to visualize paper gradient
-    glUseProgram(m_defaultProgram);
-    const GLint defaultTextureUniformLocation = glGetUniformLocation(m_defaultProgram, "myTexture");
-    glUniform1i(defaultTextureUniformLocation, 0);
-    if (m_paperTextureGradient->GetColorTexture().expired()) {
-        std::cerr << "Failed to get color texture!\n";
-        return;
-    }
-    m_paperTextureGradient->GetColorTexture().lock()->Bind(0);
-    Framebuffer::Unbind();
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    m_fullscreenQuad->Draw();
-    */
-
+    // Wobble edges
     glUseProgram(m_wobbleProgram);
     const GLint wobbleTextureUniformLocation = glGetUniformLocation(m_wobbleProgram, "myTexture");
     glUniform1i(wobbleTextureUniformLocation, 0);
@@ -328,6 +317,21 @@ void Application::Tick(double deltaTime)
         return;
     }
     m_paperTextureGradient->GetColorTexture().lock()->Bind(1);
+    m_framebufferB->Bind();
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    m_fullscreenQuad->Draw();
+
+    // Edge darkening
+    glUseProgram(m_edgeDarkeningProgram);
+    const GLint edgeDarkeningTextureUniformLocation = glGetUniformLocation(m_edgeDarkeningProgram, "myTexture");
+    glUniform1i(edgeDarkeningTextureUniformLocation, 0);
+    const GLint edgeDarkeningEdgeDarkeningMagnitudeUniformLocation = glGetUniformLocation(m_edgeDarkeningProgram, "edgeDarkeningMagnitude");
+    glUniform1f(edgeDarkeningEdgeDarkeningMagnitudeUniformLocation, m_edgeDarkeningMagnitude);
+    if (m_framebufferB->GetColorTexture().expired()) {
+        std::cerr << "Failed to get color texture!\n";
+        return;
+    }
+    m_framebufferB->GetColorTexture().lock()->Bind(0);
     Framebuffer::Unbind();
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     m_fullscreenQuad->Draw();

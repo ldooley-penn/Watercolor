@@ -46,6 +46,7 @@ private:
     GLuint m_meanShiftProgram;
     GLuint m_gradientProgram;
     GLuint m_wobbleProgram;
+    GLuint m_edgeDarkeningProgram;
 
     std::unordered_set<int> m_keysPressed;
 
@@ -70,4 +71,5 @@ private:
     glm::vec2 m_wobbleMagnitude = glm::vec2(10.f);
     glm::vec2 m_wobbleOffset = glm::vec2(0.0f, -1.0f);
     glm::vec2 m_wobbleTextureScale = glm::vec2(1.0f);
+    float m_edgeDarkeningMagnitude = 1.0f;
 };
