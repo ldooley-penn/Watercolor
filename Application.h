@@ -40,6 +40,7 @@ private:
     bool Initialize();
     void Tick(double deltaTime);
 
+    void UpdateMeanShiftedImage();
 
     GLFWwindow* m_window;
     GLuint m_defaultProgram;
@@ -66,6 +67,8 @@ private:
 
     std::unique_ptr<Framebuffer> m_framebufferA;
     std::unique_ptr<Framebuffer> m_framebufferB;
+
+    std::unique_ptr<Framebuffer> m_meanShiftedImage;
 
     int m_spatialRadius = 5;
     float m_colorRadius = 0.75f;
