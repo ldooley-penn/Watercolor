@@ -10,18 +10,19 @@
 
 #include "OpenGLWrappers/Framebuffer.h"
 #include "OpenGLWrappers/FullscreenQuad.h"
-#include "OpenGLWrappers/Texture2D.h"
 
 #include <imgui.h>
 #include <backends/imgui_impl_glfw.h>
 #include <backends/imgui_impl_opengl3.h>
+
+#include <nfd.h>
 
 #include "Utils/Debug.h"
 
 Application::Application(glm::ivec2 windowSize) :
     m_window(nullptr),
     m_defaultProgram(0),
-    m_rgbToLuvProgram(0), m_luvToRgbProgram(0), m_meanShiftProgram(0),
+    m_rgbToLuvProgram(0), m_luvToRgbProgram(0), m_meanShiftProgram(0), m_wobbleProgram(0), m_edgeDarkeningProgram(0),
     m_gradientProgram(0),
     m_mousePosition(glm::dvec2(0, 0)),
     m_windowSize(windowSize),
@@ -171,7 +172,7 @@ bool Application::Initialize()
 
     m_fullscreenQuad = std::make_unique<FullscreenQuad>();
 
-    std::vector<TextureParameter> textureParametersClampToBorder = {
+    m_imageTextureParameters = {
         {GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER},
         {GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER},
         {GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR},
@@ -199,7 +200,7 @@ bool Application::Initialize()
         {GL_TEXTURE_MAG_FILTER, GL_LINEAR}
     };
 
-    m_texture = std::make_unique<Texture2D>("Images/mountains.jpg", textureParametersClampToBorder);
+    m_texture = std::make_unique<Texture2D>("Images/mountains.jpg", m_imageTextureParameters);
     m_paperTexture = std::make_unique<Texture2D>("Images/SeamlessPaperTexture.jpg", textureParametersRepeat);
 
     m_framebufferA = std::make_unique<Framebuffer>(m_windowSize, GL_RGBA32F, GL_RGBA, GL_FLOAT, textureParametersNoMipmapClampToBorder);
@@ -239,6 +240,28 @@ void Application::Tick(double deltaTime)
     ImGui::NewFrame();
 
     ImGui::Begin("Settings");
+    if (ImGui::Button("Load Image")) {
+        NFD_Init();
+
+        nfdu8char_t *outPath;
+        nfdu8filteritem_t filters[1] = { { "Images", "png,jpg,jpeg" }};
+        nfdopendialogu8args_t args = {0};
+        args.filterList = filters;
+        args.filterCount = 1;
+        args.defaultPath = "Images/";
+        nfdresult_t result = NFD_OpenDialogU8_With(&outPath, &args);
+        if (result == NFD_OKAY)
+        {
+            m_texture = std::make_unique<Texture2D>(outPath, m_imageTextureParameters);
+            NFD_FreePathU8(outPath);
+        }
+        else if (result != NFD_CANCEL)
+        {
+            printf("Error: %s\n", NFD_GetError());
+        }
+
+        NFD_Quit();
+    }
     ImGui::InputInt("Spatial Radius", &m_spatialRadius, 1, 5);
     ImGui::InputFloat("Color Radius", &m_colorRadius, 0.125, 1);
     ImGui::InputInt("Iteration Count", &m_iterationCount, 1, 5);

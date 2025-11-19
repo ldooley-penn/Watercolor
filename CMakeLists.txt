@@ -29,10 +29,12 @@ add_executable(Watercolor
 
 add_subdirectory(${PROJECT_SOURCE_DIR}/Libraries/glfw)
 add_subdirectory(${PROJECT_SOURCE_DIR}/Libraries/glad)
+add_subdirectory(${PROJECT_SOURCE_DIR}/Libraries/nativefiledialog-extended)
 
 target_link_libraries(${PROJECT_NAME} PRIVATE
         glfw
         glad
+        nfd
 )
 
 target_include_directories(${PROJECT_NAME} PRIVATE

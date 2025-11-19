@@ -7,6 +7,8 @@
 #include <GLFW/glfw3.h>
 #include <glm/vec2.hpp>
 
+#include "OpenGLWrappers/Texture2D.h"
+
 class Framebuffer;
 class Texture2D;
 class FullscreenQuad;
@@ -71,5 +73,7 @@ private:
     glm::vec2 m_wobbleMagnitude = glm::vec2(10.f);
     glm::vec2 m_wobbleOffset = glm::vec2(0.0f, -1.0f);
     glm::vec2 m_wobbleTextureScale = glm::vec2(1.0f);
-    float m_edgeDarkeningMagnitude = 1.0f;
+    float m_edgeDarkeningMagnitude = 8.0f;
+
+    std::vector<TextureParameter> m_imageTextureParameters;
 };
