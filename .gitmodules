@@ -10,3 +10,6 @@
 [submodule "Libraries/imgui"]
 	path = Libraries/imgui
 	url = https://github.com/ocornut/imgui.git
+[submodule "Libraries/libtinyfiledialogs"]
+	path = Libraries/libtinyfiledialogs
+	url = https://github.com/native-toolkit/libtinyfiledialogs.git
