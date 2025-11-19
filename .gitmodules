@@ -10,6 +10,6 @@
 [submodule "Libraries/imgui"]
 	path = Libraries/imgui
 	url = https://github.com/ocornut/imgui.git
-[submodule "Libraries/nativefiledialog"]
-	path = Libraries/nativefiledialog
-	url = https://github.com/mlabbe/nativefiledialog.git
+[submodule "Libraries/nativefiledialog-extended"]
+	path = Libraries/nativefiledialog-extended
+	url = https://github.com/btzy/nativefiledialog-extended.git
