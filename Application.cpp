@@ -30,8 +30,7 @@ Application::Application(const glm::ivec2 windowSize) :
     m_texture(nullptr),
     m_paperTexture(nullptr),
     m_paperTextureGradient(nullptr),
-    m_framebufferA(nullptr),
-    m_framebufferB(nullptr),
+    m_pingPongFramebuffers({nullptr, nullptr}),
     m_meanShiftedImage(nullptr),
     m_imageTextureParameters(std::vector<TextureParameter>())
 {
@@ -124,8 +123,8 @@ void Application::UpdateFramebufferSize(const int width, const int height)
 {
     m_windowSize = glm::ivec2(width, height);
 
-    m_framebufferA->Resize(m_windowSize);
-    m_framebufferB->Resize(m_windowSize);
+    m_pingPongFramebuffers[0]->Resize(m_windowSize);
+    m_pingPongFramebuffers[1]->Resize(m_windowSize);
 
     UpdateMeanShiftedImage();
 }
@@ -209,8 +208,8 @@ bool Application::Initialize()
     m_texture = std::make_unique<Texture2D>("Images/mountains.jpg", m_imageTextureParameters);
     m_paperTexture = std::make_unique<Texture2D>("Images/SeamlessPaperTexture.jpg", textureParametersRepeat);
 
-    m_framebufferA = std::make_unique<Framebuffer>(m_windowSize, GL_RGBA32F, GL_RGBA, GL_FLOAT, textureParametersNoMipmapClampToBorder);
-    m_framebufferB = std::make_unique<Framebuffer>(m_windowSize, GL_RGBA32F, GL_RGBA, GL_FLOAT, textureParametersNoMipmapClampToBorder);
+    m_pingPongFramebuffers[0] = std::make_unique<Framebuffer>(m_windowSize, GL_RGBA32F, GL_RGBA, GL_FLOAT, textureParametersNoMipmapClampToBorder);
+    m_pingPongFramebuffers[1] = std::make_unique<Framebuffer>(m_windowSize, GL_RGBA32F, GL_RGBA, GL_FLOAT, textureParametersNoMipmapClampToBorder);
     m_paperTextureGradient = std::make_unique<Framebuffer>(m_paperTexture->GetSize(), GL_RGBA32F, GL_RGBA, GL_FLOAT, textureParametersNoMipmapRepeat);
     m_meanShiftedImage = std::make_unique<Framebuffer>(m_texture->GetSize(), GL_RGBA, GL_RGBA, GL_UNSIGNED_BYTE, textureParametersNoMipmapClampToBorder);
 
@@ -291,6 +290,19 @@ void Application::Tick(double deltaTime)
         UpdateMeanShiftedImage();
     }
 
+    ApplyWaterColorEffects(m_meanShiftedImage);
+
+    ImGui::Render();
+    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
+    glfwSwapBuffers(m_window);
+    glfwPollEvents();
+}
+
+void Application::ApplyWaterColorEffects(const std::unique_ptr<Framebuffer> &baseColorFramebuffer) const {
+    int pingPongWriteIndex = baseColorFramebuffer == m_pingPongFramebuffers[0] ? 1 : 0;
+    int pingPongReadIndex = (pingPongWriteIndex + 1) % 2;
+
     // Wobble edges
     glUseProgram(m_wobbleProgram);
     const GLint wobbleTextureUniformLocation = glGetUniformLocation(m_wobbleProgram, "myTexture");
@@ -303,19 +315,22 @@ void Application::Tick(double deltaTime)
     glUniform2f(gradientOffsetUniformLocation, m_wobbleOffset.x, m_wobbleOffset.y);
     const GLint wobbleTextureScaleUniformLocation = glGetUniformLocation(m_wobbleProgram, "wobbleTextureScale");
     glUniform2f(wobbleTextureScaleUniformLocation, m_wobbleTextureScale.x, m_wobbleTextureScale.y);
-    if (m_meanShiftedImage->GetColorTexture().expired()) {
+    if (baseColorFramebuffer->GetColorTexture().expired()) {
         std::cerr << "Failed to get color texture!\n";
         return;
     }
-    m_meanShiftedImage->GetColorTexture().lock()->Bind(0);
+    baseColorFramebuffer->GetColorTexture().lock()->Bind(0);
     if (m_paperTextureGradient->GetColorTexture().expired()) {
         std::cerr << "Failed to get color texture!\n";
         return;
     }
     m_paperTextureGradient->GetColorTexture().lock()->Bind(1);
-    m_framebufferB->Bind();
+    m_pingPongFramebuffers[pingPongWriteIndex]->Bind();
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     m_fullscreenQuad->Draw();
+
+    pingPongWriteIndex = (pingPongWriteIndex + 1) % 2;
+    pingPongReadIndex = (pingPongReadIndex + 1) % 2;
 
     // Edge darkening
     glUseProgram(m_edgeDarkeningProgram);
@@ -323,69 +338,69 @@ void Application::Tick(double deltaTime)
     glUniform1i(edgeDarkeningTextureUniformLocation, 0);
     const GLint edgeDarkeningEdgeDarkeningMagnitudeUniformLocation = glGetUniformLocation(m_edgeDarkeningProgram, "edgeDarkeningMagnitude");
     glUniform1f(edgeDarkeningEdgeDarkeningMagnitudeUniformLocation, m_edgeDarkeningMagnitude);
-    if (m_framebufferB->GetColorTexture().expired()) {
+    if (m_pingPongFramebuffers[pingPongReadIndex]->GetColorTexture().expired()) {
         std::cerr << "Failed to get color texture!\n";
         return;
     }
-    m_framebufferB->GetColorTexture().lock()->Bind(0);
+    m_pingPongFramebuffers[pingPongReadIndex]->GetColorTexture().lock()->Bind(0);
     Framebuffer::Unbind();
     int width, height;
     glfwGetFramebufferSize(m_window, &width, &height);
     glViewport(0, 0, width, height);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     m_fullscreenQuad->Draw();
-
-    ImGui::Render();
-    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-
-    glfwSwapBuffers(m_window);
-    glfwPollEvents();
 }
 
 void Application::UpdateMeanShiftedImage() {
     int width, height;
     glfwGetFramebufferSize(m_window, &width, &height);
 
+    int pingPongReadIndex = 1;
+    int pingPongWriteIndex = 0;
+
     // Convert to LUV
     glUseProgram(m_rgbToLuvProgram);
     const GLint rgbToLuvTextureUniformLocation = glGetUniformLocation(m_rgbToLuvProgram, "myTexture");
     glUniform1i(rgbToLuvTextureUniformLocation, 0);
     m_texture->Bind(0); // Read Texture
-    m_framebufferA->Bind(); // Write Framebuffer
+    m_pingPongFramebuffers[pingPongWriteIndex]->Bind(); // Write Framebuffer
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     m_fullscreenQuad->Draw();
+
+    pingPongReadIndex = (pingPongReadIndex + 1) % 2;
+    pingPongWriteIndex = (pingPongWriteIndex + 1) % 2;
 
     // Run mean shift
     glUseProgram(m_meanShiftProgram);
     const GLint meanShiftTextureUniformLocation = glGetUniformLocation(m_meanShiftProgram, "myTexture");
     glUniform1i(meanShiftTextureUniformLocation, 0);
-    if (m_framebufferA->GetColorTexture().expired()) {
+    if (m_pingPongFramebuffers[pingPongReadIndex]->GetColorTexture().expired()) {
         std::cerr << "Failed to get color texture!\n";
         return;
     }
-    m_framebufferA->GetColorTexture().lock()->Bind(0); // Read Texture
-    const GLint meanShiftTextureSizeUniformLocation = glGetUniformLocation(m_meanShiftProgram, "myTextureSize");
-    const glm::ivec2 textureSize = m_framebufferA->GetColorTexture().lock()->GetSize();
+    m_pingPongFramebuffers[pingPongReadIndex]->GetColorTexture().lock()->Bind(0); // Read Texture
     const GLint meanShiftSpatialRadiusUniformLocation = glGetUniformLocation(m_meanShiftProgram, "spatialRadius");
     glUniform1i(meanShiftSpatialRadiusUniformLocation, m_spatialRadius);
     const GLint meanShiftColorRadiusUniformLocation = glGetUniformLocation(m_meanShiftProgram, "colorRadius");
     glUniform1f(meanShiftColorRadiusUniformLocation, m_colorRadius);
     const GLint meanShiftIterationCountUniformLocation = glGetUniformLocation(m_meanShiftProgram, "iterationCount");
     glUniform1i(meanShiftIterationCountUniformLocation, m_iterationCount);
-    glUniform2f(meanShiftTextureSizeUniformLocation, textureSize.x, textureSize.y);
-    m_framebufferB->Bind(); // Write Framebuffer
+    m_pingPongFramebuffers[pingPongWriteIndex]->Bind(); // Write Framebuffer
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     m_fullscreenQuad->Draw();
+
+    pingPongReadIndex = (pingPongReadIndex + 1) % 2;
+    pingPongWriteIndex = (pingPongWriteIndex + 1) % 2;
 
     // Convert to RGB
     glUseProgram(m_luvToRgbProgram);
     const GLint luvToRGBTextureUniformLocation = glGetUniformLocation(m_luvToRgbProgram, "myTexture");
     glUniform1i(luvToRGBTextureUniformLocation, 0);
-    if (m_framebufferB->GetColorTexture().expired()) {
+    if (m_pingPongFramebuffers[pingPongReadIndex]->GetColorTexture().expired()) {
         std::cerr << "Failed to get color texture!\n";
         return;
     }
-    m_framebufferB->GetColorTexture().lock()->Bind(0); // Read Texture
+    m_pingPongFramebuffers[pingPongReadIndex]->GetColorTexture().lock()->Bind(0); // Read Texture
     m_meanShiftedImage->Bind(); // Write framebuffer
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     m_fullscreenQuad->Draw();

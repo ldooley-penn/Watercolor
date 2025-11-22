@@ -2,8 +2,6 @@
 
 uniform sampler2D myTexture;
 
-uniform vec2 myTextureSize;
-
 uniform int spatialRadius;
 uniform float colorRadius;
 uniform int iterationCount;
@@ -49,6 +47,7 @@ CenterOfMass GetCenterOfMass(vec2 pixelSize, CenterOfMass searchCenter){
 }
 
 vec3 MeanShift(){
+    vec2 myTextureSize = textureSize(myTexture, 0);
     vec2 pixelSize = vec2(1.0) / myTextureSize;
 
     CenterOfMass centerOfMass;

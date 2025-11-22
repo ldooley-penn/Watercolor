@@ -2,6 +2,7 @@
 
 #include <glad/glad.h>
 #define GLFW_INCLUDE_NONE
+#include <array>
 #include <memory>
 #include <unordered_set>
 #include <GLFW/glfw3.h>
@@ -40,6 +41,8 @@ private:
     bool Initialize();
     void Tick(double deltaTime);
 
+    void ApplyWaterColorEffects(const std::unique_ptr<Framebuffer>& baseColorFramebuffer) const;
+
     void UpdateMeanShiftedImage();
 
     GLFWwindow* m_window;
@@ -65,8 +68,9 @@ private:
     std::unique_ptr<Texture2D> m_paperTexture;
     std::unique_ptr<Framebuffer> m_paperTextureGradient;
 
-    std::unique_ptr<Framebuffer> m_framebufferA;
-    std::unique_ptr<Framebuffer> m_framebufferB;
+    std::array<std::unique_ptr<Framebuffer>, 2> m_pingPongFramebuffers;
+    //std::unique_ptr<Framebuffer> m_framebufferA;
+    //std::unique_ptr<Framebuffer> m_framebufferB;
 
     std::unique_ptr<Framebuffer> m_meanShiftedImage;
 
