@@ -49,7 +49,7 @@ void Framebuffer::Generate()
     glGenFramebuffers(1, &m_fbo);
     glBindFramebuffer(GL_FRAMEBUFFER, m_fbo);
 
-    m_colorTexture = std::make_shared<Texture2D>(m_resolution.x, m_resolution.y, m_colorTextureInternalFormat, m_colorTextureFormat, m_colorTextureType, m_colorTextureParameters);
+    m_colorTexture = std::make_unique<Texture2D>(m_resolution.x, m_resolution.y, m_colorTextureInternalFormat, m_colorTextureFormat, m_colorTextureType, m_colorTextureParameters);
     m_colorTexture->Bind();
 
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_colorTexture->GetTextureID(), 0);

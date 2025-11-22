@@ -17,7 +17,7 @@ class Framebuffer {
 
     static void Unbind();
 
-    [[nodiscard]] std::weak_ptr<Texture2D> GetColorTexture() const {
+    [[nodiscard]] const std::unique_ptr<Texture2D>& GetColorTexture() const {
         return m_colorTexture;
     }
 
@@ -33,7 +33,7 @@ private:
     GLenum m_colorTextureType;
 
     GLuint m_fbo;
-    std::shared_ptr<Texture2D> m_colorTexture;
+    std::unique_ptr<Texture2D> m_colorTexture;
     int m_colorTextureSlot;
     std::vector<TextureParameter> m_colorTextureParameters;
 };
