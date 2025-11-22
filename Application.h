@@ -43,6 +43,12 @@ private:
 
     void ApplyWaterColorEffects(const std::unique_ptr<Framebuffer>& baseColorFramebuffer) const;
 
+    void WobbleEdges(const std::unique_ptr<Framebuffer>& source, const std::unique_ptr<Framebuffer>& destination) const;
+
+    void DarkenEdges(const std::unique_ptr<Framebuffer>& source, const std::unique_ptr<Framebuffer>& destination) const;
+
+    void ApplyTurbulentFlow(const std::unique_ptr<Framebuffer>& source, const std::unique_ptr<Framebuffer>& destination) const;
+
     void UpdateMeanShiftedImage();
 
     GLFWwindow* m_window;
@@ -53,6 +59,7 @@ private:
     GLuint m_gradientProgram;
     GLuint m_wobbleProgram;
     GLuint m_edgeDarkeningProgram;
+    GLuint m_turbulentFlowProgram;
 
     std::unordered_set<int> m_keysPressed;
 
@@ -69,8 +76,6 @@ private:
     std::unique_ptr<Framebuffer> m_paperTextureGradient;
 
     std::array<std::unique_ptr<Framebuffer>, 2> m_pingPongFramebuffers;
-    //std::unique_ptr<Framebuffer> m_framebufferA;
-    //std::unique_ptr<Framebuffer> m_framebufferB;
 
     std::unique_ptr<Framebuffer> m_meanShiftedImage;
 
@@ -81,6 +86,8 @@ private:
     glm::vec2 m_wobbleOffset = glm::vec2(0.0f, -1.0f);
     glm::vec2 m_wobbleTextureScale = glm::vec2(1.0f);
     float m_edgeDarkeningMagnitude = 8.0f;
+    glm::vec2 m_turbulentFlowScale = glm::vec2(100.0f);
+    float m_turbulentFlowIntensity = 1.0f;
 
     std::vector<TextureParameter> m_imageTextureParameters;
 };

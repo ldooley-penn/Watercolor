@@ -23,7 +23,7 @@ Application::Application(const glm::ivec2 windowSize) :
     m_window(nullptr),
     m_defaultProgram(0),
     m_rgbToLuvProgram(0), m_luvToRgbProgram(0), m_meanShiftProgram(0), m_gradientProgram(0), m_wobbleProgram(0),
-    m_edgeDarkeningProgram(0),
+    m_edgeDarkeningProgram(0), m_turbulentFlowProgram(0),
     m_mousePosition(glm::dvec2(0, 0)),
     m_windowSize(windowSize),
     m_fullscreenQuad(nullptr),
@@ -174,6 +174,7 @@ bool Application::Initialize()
     m_gradientProgram = ShaderLoader::createShaderProgram("Shaders/Gradient.vert", "Shaders/Gradient.frag");
     m_wobbleProgram = ShaderLoader::createShaderProgram("Shaders/Wobble.vert", "Shaders/Wobble.frag");
     m_edgeDarkeningProgram = ShaderLoader::createShaderProgram("Shaders/EdgeDarkening.vert", "Shaders/EdgeDarkening.frag");
+    m_turbulentFlowProgram = ShaderLoader::createShaderProgram("Shaders/TurbulentFlow.vert", "Shaders/TurbulentFlow.frag");
 
     m_fullscreenQuad = std::make_unique<FullscreenQuad>();
 
@@ -284,6 +285,8 @@ void Application::Tick(double deltaTime)
     ImGui::InputFloat2("Gradient Offset", &m_wobbleOffset[0]);
     ImGui::InputFloat2("Wobble Texture Scale", &m_wobbleTextureScale[0]);
     ImGui::InputFloat("Edge Darkening Magnitude", &m_edgeDarkeningMagnitude, 0.5, 2.0);
+    ImGui::InputFloat2("Turbulent Flow Scale", &m_turbulentFlowScale[0]);
+    ImGui::InputFloat("Turbulent Flow Magnitude", &m_turbulentFlowIntensity, 0.5, 2.0);
     ImGui::End();
 
     if (requiresMeanShiftUpdate) {
@@ -304,6 +307,23 @@ void Application::ApplyWaterColorEffects(const std::unique_ptr<Framebuffer> &bas
     int pingPongReadIndex = (pingPongWriteIndex + 1) % 2;
 
     // Wobble edges
+    WobbleEdges(baseColorFramebuffer, m_pingPongFramebuffers[pingPongWriteIndex]);
+
+    pingPongWriteIndex = (pingPongWriteIndex + 1) % 2;
+    pingPongReadIndex = (pingPongReadIndex + 1) % 2;
+
+    // Edge darkening
+    DarkenEdges(m_pingPongFramebuffers[pingPongReadIndex], m_pingPongFramebuffers[pingPongWriteIndex]);
+
+    pingPongWriteIndex = (pingPongWriteIndex + 1) % 2;
+    pingPongReadIndex = (pingPongReadIndex + 1) % 2;
+
+    // Turbulent Flow
+    ApplyTurbulentFlow(m_pingPongFramebuffers[pingPongReadIndex], m_pingPongFramebuffers[pingPongWriteIndex]);
+}
+
+void Application::WobbleEdges(const std::unique_ptr<Framebuffer> &source,
+    const std::unique_ptr<Framebuffer> &destination) const {
     glUseProgram(m_wobbleProgram);
     const GLint wobbleTextureUniformLocation = glGetUniformLocation(m_wobbleProgram, "myTexture");
     glUniform1i(wobbleTextureUniformLocation, 0);
@@ -315,28 +335,52 @@ void Application::ApplyWaterColorEffects(const std::unique_ptr<Framebuffer> &bas
     glUniform2f(gradientOffsetUniformLocation, m_wobbleOffset.x, m_wobbleOffset.y);
     const GLint wobbleTextureScaleUniformLocation = glGetUniformLocation(m_wobbleProgram, "wobbleTextureScale");
     glUniform2f(wobbleTextureScaleUniformLocation, m_wobbleTextureScale.x, m_wobbleTextureScale.y);
-    baseColorFramebuffer->GetColorTexture()->Bind(0);
+
+    source->GetColorTexture()->Bind(0);
     m_paperTextureGradient->GetColorTexture()->Bind(1);
-    m_pingPongFramebuffers[pingPongWriteIndex]->Bind();
+    destination->Bind();
+
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
     m_fullscreenQuad->Draw();
+}
 
-    pingPongWriteIndex = (pingPongWriteIndex + 1) % 2;
-    pingPongReadIndex = (pingPongReadIndex + 1) % 2;
-
-    // Edge darkening
+void Application::DarkenEdges(const std::unique_ptr<Framebuffer> &source,
+    const std::unique_ptr<Framebuffer> &destination) const {
     glUseProgram(m_edgeDarkeningProgram);
     const GLint edgeDarkeningTextureUniformLocation = glGetUniformLocation(m_edgeDarkeningProgram, "myTexture");
     glUniform1i(edgeDarkeningTextureUniformLocation, 0);
     const GLint edgeDarkeningEdgeDarkeningMagnitudeUniformLocation = glGetUniformLocation(m_edgeDarkeningProgram, "edgeDarkeningMagnitude");
     glUniform1f(edgeDarkeningEdgeDarkeningMagnitudeUniformLocation, m_edgeDarkeningMagnitude);
-    m_pingPongFramebuffers[pingPongReadIndex]->GetColorTexture()->Bind(0);
-    Framebuffer::Unbind();
+
+    source->GetColorTexture()->Bind(0);
+    destination->Bind();
+
     int width, height;
     glfwGetFramebufferSize(m_window, &width, &height);
     glViewport(0, 0, width, height);
+
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
     m_fullscreenQuad->Draw();
+}
+
+void Application::ApplyTurbulentFlow(const std::unique_ptr<Framebuffer> &source,
+    const std::unique_ptr<Framebuffer> &destination) const {
+        glUseProgram(m_turbulentFlowProgram);
+        const GLint myTextureUniformLocation = glGetUniformLocation(m_turbulentFlowProgram, "myTexture");
+        glUniform1i(myTextureUniformLocation, 0);
+        const GLint turbulentFlowScaleUniformLocation = glGetUniformLocation(m_turbulentFlowProgram, "turbulentFlowScale");
+        glUniform2f(turbulentFlowScaleUniformLocation, m_turbulentFlowScale.x, m_turbulentFlowScale.y);
+        const GLint turbulentFlowIntensityUniformLocation = glGetUniformLocation(m_turbulentFlowProgram, "turbulentFlowIntensity");
+        glUniform1f(turbulentFlowIntensityUniformLocation, m_turbulentFlowIntensity);
+
+        source->GetColorTexture()->Bind(0);
+        Framebuffer::Unbind();
+
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        m_fullscreenQuad->Draw();
 }
 
 void Application::UpdateMeanShiftedImage() {
