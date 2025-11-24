@@ -30,6 +30,7 @@ add_executable(Watercolor
 add_subdirectory(${PROJECT_SOURCE_DIR}/Libraries/glfw)
 add_subdirectory(${PROJECT_SOURCE_DIR}/Libraries/glad)
 add_subdirectory(${PROJECT_SOURCE_DIR}/Libraries/nativefiledialog-extended)
+add_subdirectory(${PROJECT_SOURCE_DIR}/Libraries/assimp)
 
 target_link_libraries(${PROJECT_NAME} PRIVATE
         glfw
@@ -41,6 +42,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/Libraries/glm
         ${CMAKE_CURRENT_SOURCE_DIR}/Libraries/stb
         ${CMAKE_CURRENT_SOURCE_DIR}/Libraries/imgui
+        ${CMAKE_CURRENT_SOURCE_DIR}/Libraries/assimp/include
 )
 
 file(COPY "${CMAKE_SOURCE_DIR}/Shaders/" DESTINATION "${CMAKE_BINARY_DIR}/Shaders/")

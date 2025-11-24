@@ -13,3 +13,6 @@
 [submodule "Libraries/nativefiledialog-extended"]
 	path = Libraries/nativefiledialog-extended
 	url = https://github.com/btzy/nativefiledialog-extended.git
+[submodule "Libraries/assimp"]
+	path = Libraries/assimp
+	url = https://github.com/assimp/assimp.git
