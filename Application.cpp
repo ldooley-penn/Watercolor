@@ -23,7 +23,7 @@ Application::Application(const glm::ivec2 windowSize) :
     m_window(nullptr),
     m_defaultProgram(0),
     m_rgbToLuvProgram(0), m_luvToRgbProgram(0), m_meanShiftProgram(0), m_gradientProgram(0), m_wobbleProgram(0),
-    m_edgeDarkeningProgram(0), m_pigmentVariationProgram(0),
+    m_edgeDarkeningProgram(0), m_pigmentVariationProgram(0), m_toonProgram(0),
     m_mousePosition(glm::dvec2(0, 0)),
     m_windowSize(windowSize),
     m_fullscreenQuad(nullptr),
@@ -175,6 +175,7 @@ bool Application::Initialize()
     m_wobbleProgram = ShaderLoader::createShaderProgram("Shaders/Wobble.vert", "Shaders/Wobble.frag");
     m_edgeDarkeningProgram = ShaderLoader::createShaderProgram("Shaders/EdgeDarkening.vert", "Shaders/EdgeDarkening.frag");
     m_pigmentVariationProgram = ShaderLoader::createShaderProgram("Shaders/PigmentVariation.vert", "Shaders/PigmentVariation.frag");
+    m_toonProgram = ShaderLoader::createShaderProgram("Shaders/Toon.vert", "Shaders/Toon.frag");
 
     m_fullscreenQuad = std::make_unique<FullscreenQuad>();
 

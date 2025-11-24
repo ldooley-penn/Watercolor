@@ -60,6 +60,7 @@ private:
     GLuint m_wobbleProgram;
     GLuint m_edgeDarkeningProgram;
     GLuint m_pigmentVariationProgram;
+    GLuint m_toonProgram;
 
     std::unordered_set<int> m_keysPressed;
 

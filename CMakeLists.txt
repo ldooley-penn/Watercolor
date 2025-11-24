@@ -25,6 +25,8 @@ add_executable(Watercolor
         OpenGLWrappers/Texture2D.cpp
         OpenGLWrappers/Texture2D.h
         ${IMGUI_SOURCES}
+        Camera.cpp
+        Camera.h
 )
 
 add_subdirectory(${PROJECT_SOURCE_DIR}/Libraries/glfw)
