@@ -23,7 +23,7 @@ Application::Application(const glm::ivec2 windowSize) :
     m_window(nullptr),
     m_defaultProgram(0),
     m_rgbToLuvProgram(0), m_luvToRgbProgram(0), m_meanShiftProgram(0), m_gradientProgram(0), m_wobbleProgram(0),
-    m_edgeDarkeningProgram(0), m_turbulentFlowProgram(0),
+    m_edgeDarkeningProgram(0), m_pigmentVariationProgram(0),
     m_mousePosition(glm::dvec2(0, 0)),
     m_windowSize(windowSize),
     m_fullscreenQuad(nullptr),
@@ -174,7 +174,7 @@ bool Application::Initialize()
     m_gradientProgram = ShaderLoader::createShaderProgram("Shaders/Gradient.vert", "Shaders/Gradient.frag");
     m_wobbleProgram = ShaderLoader::createShaderProgram("Shaders/Wobble.vert", "Shaders/Wobble.frag");
     m_edgeDarkeningProgram = ShaderLoader::createShaderProgram("Shaders/EdgeDarkening.vert", "Shaders/EdgeDarkening.frag");
-    m_turbulentFlowProgram = ShaderLoader::createShaderProgram("Shaders/TurbulentFlow.vert", "Shaders/TurbulentFlow.frag");
+    m_pigmentVariationProgram = ShaderLoader::createShaderProgram("Shaders/PigmentVariation.vert", "Shaders/PigmentVariation.frag");
 
     m_fullscreenQuad = std::make_unique<FullscreenQuad>();
 
@@ -285,8 +285,12 @@ void Application::Tick(double deltaTime)
     ImGui::InputFloat2("Gradient Offset", &m_wobbleOffset[0]);
     ImGui::InputFloat2("Wobble Texture Scale", &m_wobbleTextureScale[0]);
     ImGui::InputFloat("Edge Darkening Magnitude", &m_edgeDarkeningMagnitude, 0.5, 2.0);
-    ImGui::InputFloat2("Turbulent Flow Scale", &m_turbulentFlowScale[0]);
+    ImGui::InputFloat("Turbulent Flow Scale", &m_turbulentFlowScale, 1.0, 10.0);
     ImGui::InputFloat("Turbulent Flow Magnitude", &m_turbulentFlowIntensity, 0.5, 2.0);
+    ImGui::InputFloat("Paper Grain Scale", &m_paperGrainScale, 0.5, 10.0);
+    ImGui::InputFloat("Paper Grain Intensity", &m_paperGrainIntensity, 0.5, 2.0);
+    ImGui::InputFloat("Gaussian Nosie Scale", &m_gaussianNoiseScale, 0.5, 10.0);
+    ImGui::InputFloat("Gaussian Noise Intensity", &m_gaussianNoiseIntensity, 0.5, 2.0);
     ImGui::End();
 
     if (requiresMeanShiftUpdate) {
@@ -319,7 +323,7 @@ void Application::ApplyWaterColorEffects(const std::unique_ptr<Framebuffer> &bas
     pingPongReadIndex = (pingPongReadIndex + 1) % 2;
 
     // Turbulent Flow
-    ApplyTurbulentFlow(m_pingPongFramebuffers[pingPongReadIndex], m_pingPongFramebuffers[pingPongWriteIndex]);
+    ApplyPigmentVariation(m_pingPongFramebuffers[pingPongReadIndex], m_pingPongFramebuffers[pingPongWriteIndex]);
 }
 
 void Application::WobbleEdges(const std::unique_ptr<Framebuffer> &source,
@@ -365,17 +369,28 @@ void Application::DarkenEdges(const std::unique_ptr<Framebuffer> &source,
     m_fullscreenQuad->Draw();
 }
 
-void Application::ApplyTurbulentFlow(const std::unique_ptr<Framebuffer> &source,
+void Application::ApplyPigmentVariation(const std::unique_ptr<Framebuffer> &source,
     const std::unique_ptr<Framebuffer> &destination) const {
-        glUseProgram(m_turbulentFlowProgram);
-        const GLint myTextureUniformLocation = glGetUniformLocation(m_turbulentFlowProgram, "myTexture");
+        glUseProgram(m_pigmentVariationProgram);
+        const GLint myTextureUniformLocation = glGetUniformLocation(m_pigmentVariationProgram, "myTexture");
         glUniform1i(myTextureUniformLocation, 0);
-        const GLint turbulentFlowScaleUniformLocation = glGetUniformLocation(m_turbulentFlowProgram, "turbulentFlowScale");
-        glUniform2f(turbulentFlowScaleUniformLocation, m_turbulentFlowScale.x, m_turbulentFlowScale.y);
-        const GLint turbulentFlowIntensityUniformLocation = glGetUniformLocation(m_turbulentFlowProgram, "turbulentFlowIntensity");
+        const GLint paperTextureUniformLocation = glGetUniformLocation(m_pigmentVariationProgram, "paperTexture");
+        glUniform1i(paperTextureUniformLocation, 1);
+        const GLint turbulentFlowScaleUniformLocation = glGetUniformLocation(m_pigmentVariationProgram, "turbulentFlowScale");
+        glUniform1f(turbulentFlowScaleUniformLocation, m_turbulentFlowScale);
+        const GLint turbulentFlowIntensityUniformLocation = glGetUniformLocation(m_pigmentVariationProgram, "turbulentFlowIntensity");
         glUniform1f(turbulentFlowIntensityUniformLocation, m_turbulentFlowIntensity);
+        const GLint paperGrainScaleUniformLocation = glGetUniformLocation(m_pigmentVariationProgram, "paperGrainScale");
+        glUniform1f(paperGrainScaleUniformLocation, m_paperGrainScale);
+        const GLint paperGrainIntensityUniformLocation = glGetUniformLocation(m_pigmentVariationProgram, "paperGrainIntensity");
+        glUniform1f(paperGrainIntensityUniformLocation, m_paperGrainIntensity);
+        const GLint gaussianNoiseScaleUniformLocation = glGetUniformLocation(m_pigmentVariationProgram, "gaussianNoiseScale");
+        glUniform1f(gaussianNoiseScaleUniformLocation, m_gaussianNoiseScale);
+        const GLint gaussianNoiseIntensityUniformLocation = glGetUniformLocation(m_pigmentVariationProgram, "gaussianNoiseIntensity");
+        glUniform1f(gaussianNoiseIntensityUniformLocation, m_gaussianNoiseIntensity);
 
         source->GetColorTexture()->Bind(0);
+        m_paperTextureGradient->GetColorTexture()->Bind(1);
         Framebuffer::Unbind();
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);

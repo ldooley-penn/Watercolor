@@ -1,11 +1,20 @@
 #version 410 core
 
 uniform sampler2D myTexture;
+uniform sampler2D paperTexture;
 
-uniform vec2 turbulentFlowScale;
+uniform float turbulentFlowScale;
 uniform float turbulentFlowIntensity;
 
+uniform float gaussianNoiseScale;
+uniform float gaussianNoiseIntensity;
+
+uniform float paperGrainScale;
+uniform float paperGrainIntensity;
+
 in vec2 fUV;
+
+const float PI = 3.1415926;
 
 vec3 darkenColor(vec3 C, float d){
     return C - (C - C * C) * (d - 1.0);
@@ -34,7 +43,7 @@ vec2 getGradient(vec2 gridPoint){
     return vec2(r1, r2);
 }
 
-float perlinNoise(vec2 scale, vec2 offset){
+float perlinNoise(float scale, vec2 offset){
     vec2 myTextureSize = textureSize(myTexture, 0);
 
     vec2 samplePoint = (fUV * myTextureSize + offset) / scale;
@@ -61,8 +70,8 @@ float perlinNoise(vec2 scale, vec2 offset){
     return interpolate2D(value00, value01, value10, value11, samplePoint - grid00);
 }
 
-vec4 getTurbulentFlowColor(){
-    vec2 perlinNoiseScale = turbulentFlowScale;
+float getTurbulentFlowDarkeningFactor(){
+    float perlinNoiseScale = turbulentFlowScale;
     float perlinNoiseIntensity = turbulentFlowIntensity;
     float noise = 0.0;
     for(int i = 0; i<10; i++){
@@ -71,11 +80,51 @@ vec4 getTurbulentFlowColor(){
         perlinNoiseScale *= 0.7f;
     }
 
-    vec3 textureColor = texture(myTexture, fUV).xyz;
-    vec3 darkenedColor = darkenColor(textureColor, 1.0 + noise);
-    return vec4(darkenedColor, 1.0);
+    return noise;
+}
+
+float getPaperGrainDarkeningFactor(){
+    vec2 myTextureSize = vec2(textureSize(myTexture, 0));
+    vec2 paperTextureSize = vec2(textureSize(paperTexture, 0));
+
+    vec2 paperUV = vec2(fUV.x, fUV.y * paperTextureSize.x / myTextureSize.x) / paperGrainScale;
+    return paperGrainIntensity * texture(paperTexture, paperUV).r;
+}
+
+float gaussianRandom(vec2 seed){
+    float r1 = random(seed);
+    float r2 = random(seed + vec2(0.5, 0.5));
+    // Box muller transform
+    return sqrt(abs(-2.0 * log(max(0.001, r1)))) * cos(2.0 * PI * r2);
+}
+
+float getGaussianDarkeningFactor(){
+    vec2 myTextureSize = textureSize(myTexture, 0);
+
+    vec2 point = fUV * myTextureSize / vec2(gaussianNoiseScale);
+    vec2 p00 = floor(point);
+    vec2 p11 = p00 + vec2(1.0);
+    vec2 p01 = p00 + vec2(0.0, 1.0);
+    vec2 p10 = p00 + vec2(1.0, 0.0);
+
+    float g00 = gaussianRandom(p00);
+    float g11 = gaussianRandom(p11);
+    float g01 = gaussianRandom(p01);
+    float g10 = gaussianRandom(p10);
+
+    float gaussian = interpolate2D(g00, g01, g10, g11, point - p00);
+    return gaussianNoiseIntensity * gaussian;
 }
 
 void main(){
-    gl_FragColor = getTurbulentFlowColor();
+    vec3 textureColor = texture(myTexture, fUV).xyz;
+
+    float darkeningFactor = 1.0;
+    darkeningFactor += getTurbulentFlowDarkeningFactor();
+    darkeningFactor += getPaperGrainDarkeningFactor();
+    darkeningFactor += getGaussianDarkeningFactor();
+
+    vec3 darkenedColor = darkenColor(textureColor, darkeningFactor);
+
+    gl_FragColor = vec4(darkenedColor, 1.0);
 }

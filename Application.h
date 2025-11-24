@@ -47,7 +47,7 @@ private:
 
     void DarkenEdges(const std::unique_ptr<Framebuffer>& source, const std::unique_ptr<Framebuffer>& destination) const;
 
-    void ApplyTurbulentFlow(const std::unique_ptr<Framebuffer>& source, const std::unique_ptr<Framebuffer>& destination) const;
+    void ApplyPigmentVariation(const std::unique_ptr<Framebuffer>& source, const std::unique_ptr<Framebuffer>& destination) const;
 
     void UpdateMeanShiftedImage();
 
@@ -59,7 +59,7 @@ private:
     GLuint m_gradientProgram;
     GLuint m_wobbleProgram;
     GLuint m_edgeDarkeningProgram;
-    GLuint m_turbulentFlowProgram;
+    GLuint m_pigmentVariationProgram;
 
     std::unordered_set<int> m_keysPressed;
 
@@ -82,12 +82,16 @@ private:
     int m_spatialRadius = 5;
     float m_colorRadius = 0.75f;
     int m_iterationCount = 5;
-    glm::vec2 m_wobbleMagnitude = glm::vec2(10.f);
+    glm::vec2 m_wobbleMagnitude = glm::vec2(1.f);
     glm::vec2 m_wobbleOffset = glm::vec2(0.0f, -1.0f);
     glm::vec2 m_wobbleTextureScale = glm::vec2(1.0f);
     float m_edgeDarkeningMagnitude = 8.0f;
-    glm::vec2 m_turbulentFlowScale = glm::vec2(100.0f);
+    float m_turbulentFlowScale = 100.0f;
     float m_turbulentFlowIntensity = 1.0f;
+    float m_paperGrainScale = 1.f;
+    float m_paperGrainIntensity = 1.0f;
+    float m_gaussianNoiseScale = 1.f;
+    float m_gaussianNoiseIntensity = 0.5f;
 
     std::vector<TextureParameter> m_imageTextureParameters;
 };
