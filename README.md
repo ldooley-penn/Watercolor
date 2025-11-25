@@ -45,4 +45,14 @@ So far things have been going very well, and I forsee the mean shift implementat
 ![mountains](https://github.com/user-attachments/assets/892e11ad-d7ee-454a-a297-d45d2fabaadd)
 <img width="1919" height="1008" alt="AbstractedMountain" src="https://github.com/user-attachments/assets/2f9c9180-f8be-4c86-97dd-494c629bcc76" />
 
+# Mileston 2
+
+Please use commit 6db821aaf1459f42d3664ac574c19f5cd3b62e71 which was made on November 24th as my milestone submission. At this stage I had the following results:
+
+## Progress
+Now I have the full image shading pipeline complete as presented in the original research paper and am in the process of working on adding in toon shaded models.
+
+## Full image pipeline results
+<img width="1919" height="1006" alt="WatercolorShadingCheckpoint2" src="https://github.com/user-attachments/assets/5846b6e7-29d2-464d-b159-f9e363ebba30" />
+
 
