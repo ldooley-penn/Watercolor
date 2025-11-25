@@ -5,6 +5,8 @@
 
 #include <iostream>
 #include "Utils/ShaderLoader.h"
+#include "Camera.h"
+#include "OpenGLWrappers/Mesh.h"
 
 #include <glm/gtc/type_ptr.hpp>
 
@@ -26,8 +28,10 @@ Application::Application(const glm::ivec2 windowSize) :
     m_edgeDarkeningProgram(0), m_pigmentVariationProgram(0), m_toonProgram(0),
     m_mousePosition(glm::dvec2(0, 0)),
     m_windowSize(windowSize),
+    m_camera(std::make_unique<Camera>(m_windowSize, glm::vec3(0, 0, 10), glm::vec3(0, 0, -1), glm::vec3(0, 1, 0), 1.f, 1.f)),
     m_fullscreenQuad(nullptr),
     m_texture(nullptr),
+    m_mesh(nullptr),
     m_paperTexture(nullptr),
     m_paperTextureGradient(nullptr),
     m_pingPongFramebuffers({nullptr, nullptr}),
@@ -125,6 +129,8 @@ void Application::UpdateFramebufferSize(const int width, const int height)
 
     m_pingPongFramebuffers[0]->Resize(m_windowSize);
     m_pingPongFramebuffers[1]->Resize(m_windowSize);
+
+    m_camera->Resize(m_windowSize);
 
     UpdateMeanShiftedImage();
 }
@@ -244,6 +250,29 @@ bool Application::Initialize()
 
 void Application::Tick(double deltaTime)
 {
+    glm::vec3 forwardRightUpInput = glm::vec3(0);
+    if (m_keysPressed.contains(GLFW_KEY_W)) {
+        forwardRightUpInput.x += 1.0;
+    }
+    if (m_keysPressed.contains(GLFW_KEY_S)) {
+        forwardRightUpInput.x -= 1.0;
+    }
+    if (m_keysPressed.contains(GLFW_KEY_A)) {
+        forwardRightUpInput.y -= 1.0;
+    }
+    if (m_keysPressed.contains(GLFW_KEY_D)) {
+        forwardRightUpInput.y += 1.0;
+    }
+    if (m_keysPressed.contains(GLFW_KEY_SPACE)) {
+        forwardRightUpInput.z += 1.0;
+    }
+    if (m_keysPressed.contains(GLFW_KEY_LEFT_SHIFT)) {
+        forwardRightUpInput.z -= 1.0;
+    }
+    if (forwardRightUpInput != glm::vec3(0)) {
+        m_camera->MoveCamera(glm::normalize(forwardRightUpInput), deltaTime);
+    }
+
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
@@ -264,6 +293,30 @@ void Application::Tick(double deltaTime)
         {
             m_texture = std::make_unique<Texture2D>(outPath, m_imageTextureParameters);
             requiresMeanShiftUpdate = true;
+            m_renderMode = RenderMode::Image;
+            NFD_FreePathU8(outPath);
+        }
+        else if (result != NFD_CANCEL)
+        {
+            printf("Error: %s\n", NFD_GetError());
+        }
+
+        NFD_Quit();
+    }
+    if (ImGui::Button("Load OBJ")) {
+        NFD_Init();
+
+        nfdu8char_t *outPath;
+        nfdu8filteritem_t filters[1] = { { "Meshes", "obj" }};
+        nfdopendialogu8args_t args = {0};
+        args.filterList = filters;
+        args.filterCount = 1;
+        args.defaultPath = "Meshes/";
+        nfdresult_t result = NFD_OpenDialogU8_With(&outPath, &args);
+        if (result == NFD_OKAY)
+        {
+            m_mesh = std::make_unique<Mesh>(outPath);
+            m_renderMode = RenderMode::Mesh;
             NFD_FreePathU8(outPath);
         }
         else if (result != NFD_CANCEL)
@@ -298,7 +351,12 @@ void Application::Tick(double deltaTime)
         UpdateMeanShiftedImage();
     }
 
-    ApplyWaterColorEffects(m_meanShiftedImage);
+    if (m_renderMode == RenderMode::Mesh) {
+        RenderMesh(m_pingPongFramebuffers[0]);
+    }
+    else {
+        ApplyWaterColorEffects(m_meanShiftedImage);
+    }
 
     ImGui::Render();
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
@@ -444,4 +502,22 @@ void Application::UpdateMeanShiftedImage() {
     m_meanShiftedImage->Bind(); // Write framebuffer
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     m_fullscreenQuad->Draw();
+}
+
+void Application::RenderMesh(const std::unique_ptr<Framebuffer> &destination) const {
+    glUseProgram(m_toonProgram);
+    const GLint modelMatrixUniformLocation = glGetUniformLocation(m_toonProgram, "modelMatrix");
+    glUniformMatrix4fv(modelMatrixUniformLocation, 1, GL_FALSE, glm::value_ptr(m_mesh->GetModelMatrix()));
+    const GLint viewMatrixUniformLocation = glGetUniformLocation(m_toonProgram, "viewMatrix");
+    glUniformMatrix4fv(viewMatrixUniformLocation, 1, GL_FALSE, glm::value_ptr(m_camera->GetViewMatrix()));
+    const GLint projectionMatrixUniformLocation = glGetUniformLocation(m_toonProgram, "projectionMatrix");
+    glUniformMatrix4fv(projectionMatrixUniformLocation, 1, GL_FALSE, glm::value_ptr(m_camera->GetProjectionMatrix()));
+
+    glEnable(GL_DEPTH_TEST);
+    destination->Bind();
+    Framebuffer::Unbind();
+    glViewport(0, 0, m_windowSize.x, m_windowSize.y);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    m_mesh->Draw();
+    glDisable(GL_DEPTH_TEST);
 }

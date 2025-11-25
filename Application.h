@@ -10,9 +10,15 @@
 
 #include "OpenGLWrappers/Texture2D.h"
 
+class Mesh;
+class Camera;
 class Framebuffer;
 class Texture2D;
 class FullscreenQuad;
+
+enum class RenderMode {
+    Image, Mesh
+};
 
 class Application {
 public:
@@ -51,6 +57,8 @@ private:
 
     void UpdateMeanShiftedImage();
 
+    void RenderMesh(const std::unique_ptr<Framebuffer>& destination) const;
+
     GLFWwindow* m_window;
     GLuint m_defaultProgram;
     GLuint m_rgbToLuvProgram;
@@ -70,9 +78,13 @@ private:
 
     glm::ivec2 m_windowSize;
 
+    std::unique_ptr<Camera> m_camera;
+
     std::unique_ptr<FullscreenQuad> m_fullscreenQuad;
 
     std::unique_ptr<Texture2D> m_texture;
+    std::unique_ptr<Mesh> m_mesh;
+
     std::unique_ptr<Texture2D> m_paperTexture;
     std::unique_ptr<Framebuffer> m_paperTextureGradient;
 
@@ -95,4 +107,6 @@ private:
     float m_gaussianNoiseIntensity = 0.5f;
 
     std::vector<TextureParameter> m_imageTextureParameters;
+
+    RenderMode m_renderMode = RenderMode::Image;
 };
