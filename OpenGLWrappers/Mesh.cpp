@@ -32,43 +32,40 @@ Mesh::Mesh(const std::string &filepath):
         return;
     }
 
-    int i = 0;
-    // Loop over shapes
-    for (size_t s = 0; s < shapes.size(); s++) {
-        // Loop over faces(polygon)
-        size_t index_offset = 0;
-        for (size_t f = 0; f < shapes[s].mesh.num_face_vertices.size(); f++) {
-            size_t fv = size_t(shapes[s].mesh.num_face_vertices[f]);
+    // Credit for unique indexing technique to https://vulkan-tutorial.com/Loading_models
+    std::unordered_map<HashableVertex, uint32_t> uniqueVertices{};
 
-            // Loop over vertices in the face.
-            for (size_t v = 0; v < fv; v++) {
-                tinyobj::index_t idx = shapes[s].mesh.indices[index_offset + v];
-                vertices.push_back(attrib.vertices[3*size_t(idx.vertex_index)+0] / 100.f);
-                vertices.push_back(attrib.vertices[3*size_t(idx.vertex_index)+2] / 100.f);
-                vertices.push_back(attrib.vertices[3*size_t(idx.vertex_index)+1] / 100.f);
+    for (const auto& shape : shapes) {
+        for (const auto& index : shape.mesh.indices) {
+            HashableVertex hashableVertex{};
 
-                if (idx.normal_index >= 0) {
-                    vertices.push_back(attrib.normals[3*size_t(idx.normal_index)+0]);
-                    vertices.push_back(attrib.normals[3*size_t(idx.normal_index)+1]);
-                    vertices.push_back(attrib.normals[3*size_t(idx.normal_index)+2]);
-                }
-                else {
-                    vertices.push_back(0);
-                    vertices.push_back(0);
-                    vertices.push_back(0);
-                }
+            hashableVertex.m_position.x = attrib.vertices[3 * index.vertex_index + 0] / 100.f;
+            hashableVertex.m_position.y = attrib.vertices[3 * index.vertex_index + 2] / 100.f;
+            hashableVertex.m_position.z = attrib.vertices[3 * index.vertex_index + 1] / 100.f;
 
-                /*
-                if (idx.texcoord_index >= 0) {
-                    tinyobj::real_t tx = attrib.texcoords[2*size_t(idx.texcoord_index)+0];
-                    tinyobj::real_t ty = attrib.texcoords[2*size_t(idx.texcoord_index)+1];
-                }
-                */
-
-                indices.push_back(i);
-                i++;
+            if (index.normal_index >= 0) {
+                hashableVertex.m_normal.x = attrib.normals[3 * index.normal_index + 0];
+                hashableVertex.m_normal.y = attrib.normals[3 * index.normal_index + 2];
+                hashableVertex.m_normal.z = attrib.normals[3 * index.normal_index + 1];
             }
-            index_offset += fv;
+            else {
+                hashableVertex.m_normal = glm::vec3(0, 0, 0);
+            }
+
+            hashableVertex.m_uv = glm::vec2(0, 0);
+
+            if (!uniqueVertices.contains(hashableVertex)) {
+                uniqueVertices[hashableVertex] = static_cast<uint32_t>(vertices.size()) / 6;
+
+                vertices.push_back(hashableVertex.m_position.x);
+                vertices.push_back(hashableVertex.m_position.y);
+                vertices.push_back(hashableVertex.m_position.z);
+                vertices.push_back(hashableVertex.m_normal.x);
+                vertices.push_back(hashableVertex.m_normal.y);
+                vertices.push_back(hashableVertex.m_normal.z);
+            }
+
+            indices.push_back(uniqueVertices[hashableVertex]);
         }
     }
 

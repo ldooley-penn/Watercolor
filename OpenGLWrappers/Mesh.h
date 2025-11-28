@@ -2,11 +2,38 @@
 #include <string>
 
 #include "glad/glad.h"
+
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/gtx/hash.hpp>
 #include "glm/glm.hpp"
 
 struct aiMesh;
 struct aiNode;
 struct aiScene;
+
+// Credit to https://vulkan-tutorial.com/Loading_models
+
+struct HashableVertex {
+    glm::vec3 m_position;
+    glm::vec3 m_normal;
+    glm::vec2 m_uv;
+
+    bool operator==(const HashableVertex& other) const {
+        return m_position == other.m_position && m_normal == other.m_normal && m_uv == other.m_uv;
+    }
+
+
+};
+
+namespace std {
+    template<> struct hash<HashableVertex> {
+        size_t operator()(HashableVertex const& vertex) const {
+            return ((hash<glm::vec3>()(vertex.m_position) ^
+                   (hash<glm::vec3>()(vertex.m_normal) << 1)) >> 1) ^
+                   (hash<glm::vec2>()(vertex.m_uv) << 1);
+        }
+    };
+}
 
 class Mesh {
 public:
