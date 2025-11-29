@@ -59,7 +59,14 @@ Now I have the full image shading pipeline complete as presented in the original
 
 ## Results
 
+Mountains raw image:
+![mountains_nice_sky](https://github.com/user-attachments/assets/f686bd9d-5f10-4911-afd8-a0fa57eef43b)
 
+Mountains after processing:
+<img width="1280" height="858" alt="watercolor_mountains_nice_sky" src="https://github.com/user-attachments/assets/5ad44900-9a9f-4abe-a698-de5f599f68cd" />
+
+Mesh after processing:
+<img width="635" height="475" alt="watercolor_bunny" src="https://github.com/user-attachments/assets/80d992e9-c8c3-4ae9-b8a6-08d4f1355e86" />
 
 ## Post Mortem
 
