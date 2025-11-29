@@ -51,6 +51,8 @@ private:
 
     static void CalculateVertexNormals(std::vector<GLfloat>& vertexData, const std::vector<GLuint>& indices);
 
+    static void SmoothNormals(unsigned int iterations, std::vector<GLfloat>& vertexData, const std::vector<GLuint>& indices);
+
     void Construct(const std::vector<GLfloat>& vertexData, const std::vector<GLuint>& indices);
 
     glm::mat4 m_modelMatrix;

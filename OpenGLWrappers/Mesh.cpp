@@ -76,6 +76,8 @@ Mesh::Mesh(const std::string &filepath):
         CalculateVertexNormals(vertices, indices);
     }
 
+    SmoothNormals(1, vertices, indices);
+
     Construct(vertices, indices);
 }
 
@@ -100,13 +102,12 @@ std::unordered_map<GLuint, std::unordered_set<GLuint>> Mesh::GenerateNeighborMap
 
     for (int i = 0; i < indices.size(); i+=3) {
         for (int triIndex = 0; triIndex < 3; triIndex++) {
-            if (neighborMap.contains(indices[i + triIndex])) {
-                GLuint currentIndex = indices[i + triIndex];
-                GLuint neighborIndex1 = indices[i + (triIndex + 1) % 3];
-                GLuint neighborIndex2 = indices[i + (triIndex + 2) % 3];
-                neighborMap.at(currentIndex).insert(neighborIndex1);
-                neighborMap.at(currentIndex).insert(neighborIndex2);
-            }
+            GLuint currentIndex = indices[i + triIndex];
+            GLuint neighborIndex1 = indices[i + (triIndex + 1) % 3];
+            GLuint neighborIndex2 = indices[i + (triIndex + 2) % 3];
+
+            neighborMap[currentIndex].insert(neighborIndex1);
+            neighborMap[currentIndex].insert(neighborIndex2);
         }
     }
 
@@ -155,6 +156,31 @@ void Mesh::CalculateVertexNormals(std::vector<GLfloat> &vertexData, const std::v
         vertexData[normalXIndex] = resizedVertexNormal.x;
         vertexData[normalYIndex] = resizedVertexNormal.y;
         vertexData[normalZIndex] = resizedVertexNormal.z;
+    }
+}
+
+void Mesh::SmoothNormals(unsigned int iterations, std::vector<GLfloat> &vertexData,
+    const std::vector<GLuint> &indices) {
+    const std::unordered_map<GLuint, std::unordered_set<GLuint>> neighborMap = GenerateNeighborMap(indices);
+    for (int i = 0; i<iterations; i++) {
+        for (const auto& index: indices) {
+            if (!neighborMap.contains(index)) {
+                continue;
+            }
+            const std::unordered_set<GLuint>& neighborIndices = neighborMap.at(index);
+
+            glm::vec3 normalsSum = glm::vec3(0.0);
+            for (const auto& neighborIndex : neighborIndices) {
+                normalsSum.x += vertexData[6 * neighborIndex + 3];
+                normalsSum.y += vertexData[6 * neighborIndex + 4];
+                normalsSum.z += vertexData[6 * neighborIndex + 5];
+            }
+            glm::vec3 newVertexNormal = glm::normalize(normalsSum);
+
+            vertexData[6 * index + 3] = newVertexNormal.x;
+            vertexData[6 * index + 4] = newVertexNormal.y;
+            vertexData[6 * index + 5] = newVertexNormal.z;
+        }
     }
 }
 
