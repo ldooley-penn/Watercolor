@@ -45,7 +45,7 @@ So far things have been going very well, and I forsee the mean shift implementat
 ![mountains](https://github.com/user-attachments/assets/892e11ad-d7ee-454a-a297-d45d2fabaadd)
 <img width="1919" height="1008" alt="AbstractedMountain" src="https://github.com/user-attachments/assets/2f9c9180-f8be-4c86-97dd-494c629bcc76" />
 
-# Mileston 2
+# Milestone 2
 
 Please use commit 6db821aaf1459f42d3664ac574c19f5cd3b62e71 which was made on November 24th as my milestone submission. At this stage I had the following results:
 
@@ -55,4 +55,35 @@ Now I have the full image shading pipeline complete as presented in the original
 ## Full image pipeline results
 <img width="1919" height="1006" alt="WatercolorShadingCheckpoint2" src="https://github.com/user-attachments/assets/5846b6e7-29d2-464d-b159-f9e363ebba30" />
 
+# Final Submission
 
+## Results
+
+
+
+## Post Mortem
+
+Overall this project went fairly well. Some of the more challenging pieces such as 
+the LUV color space conversion and Mean Shift Segmentation were the first things
+I tackled which got them out of the way and de-risked the project. 
+
+I did follow the paper's suggestions on how they implemented various layers of noise functions
+to mimic certain watercolor effects, but I'm not 100% in love with how they look. I think
+the layered gaussian noise looks somewhat nice for high frequency noise, but I wouldn't really
+relate it to watercolor painting as much as just a way to try abstracting the image so the
+viewer sees it as being less realistic. However, I would say overall learning about a handful
+of extra noise types was a good learning experience and I can see how they will come in handy
+in future projects.
+
+During the later parts of the project, I wanted to test out the paper's realtime mesh
+pipeline as well and did so just through my OpenGL application directly. I think the output
+is OK, but not as good as the image -> watercolor pipeline. I think the main reasons for this are
+that toon shading, which replaces the mean shift segementation from the image pipeline, does not
+create the same effect since it can leave some pretty low frequency regions that are unnatural for
+watercolor. I'm sure it would also look better with textured models, but I did not end up implementing
+those. 
+
+Overall, I could definitely see this being an interesting effect in something like a game application
+if the pre-watercolor effect pipeline is designed well to segment into medium to high frequency
+segments. I also think that figuring out a way to blur the edge darkening effect in one direction
+would make the "color pooling" effect of the stylization more effective.

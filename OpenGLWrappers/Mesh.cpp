@@ -40,14 +40,14 @@ Mesh::Mesh(const std::string &filepath):
         for (const auto& index : shape.mesh.indices) {
             HashableVertex hashableVertex{};
 
-            hashableVertex.m_position.x = attrib.vertices[3 * index.vertex_index + 0] / 100.f;
-            hashableVertex.m_position.y = attrib.vertices[3 * index.vertex_index + 2] / 100.f;
-            hashableVertex.m_position.z = attrib.vertices[3 * index.vertex_index + 1] / 100.f;
+            hashableVertex.m_position.x = attrib.vertices[3 * index.vertex_index + 0];
+            hashableVertex.m_position.y = attrib.vertices[3 * index.vertex_index + 1];
+            hashableVertex.m_position.z = attrib.vertices[3 * index.vertex_index + 2];
 
             if (index.normal_index >= 0) {
                 hashableVertex.m_normal.x = attrib.normals[3 * index.normal_index + 0];
-                hashableVertex.m_normal.y = attrib.normals[3 * index.normal_index + 2];
-                hashableVertex.m_normal.z = attrib.normals[3 * index.normal_index + 1];
+                hashableVertex.m_normal.y = attrib.normals[3 * index.normal_index + 1];
+                hashableVertex.m_normal.z = attrib.normals[3 * index.normal_index + 2];
             }
             else
             {
@@ -78,7 +78,7 @@ Mesh::Mesh(const std::string &filepath):
 
     SmoothNormals(1, vertices, indices);
 
-    FlipTriangles(indices);
+    //FlipTriangles(indices);
 
     Construct(vertices, indices);
 }
