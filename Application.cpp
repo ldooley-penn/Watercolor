@@ -28,7 +28,7 @@ Application::Application(const glm::ivec2 windowSize) :
     m_edgeDarkeningProgram(0), m_pigmentVariationProgram(0), m_toonProgram(0),
     m_mousePosition(glm::dvec2(0, 0)),
     m_windowSize(windowSize),
-    m_camera(std::make_unique<Camera>(m_windowSize, glm::vec3(0, 0, 10), glm::vec3(0, 0, -1), glm::vec3(0, 1, 0), 1.f, 1.f)),
+    m_camera(std::make_unique<Camera>(m_windowSize, glm::vec3(0, 0, 2), glm::vec3(0, 0, -1), glm::vec3(0, 1, 0), 1.f, 1.f)),
     m_fullscreenQuad(nullptr),
     m_texture(nullptr),
     m_mesh(nullptr),
@@ -516,10 +516,10 @@ void Application::RenderMesh(const std::unique_ptr<Framebuffer> &destination) co
     const GLint projectionMatrixUniformLocation = glGetUniformLocation(m_toonProgram, "projectionMatrix");
     glUniformMatrix4fv(projectionMatrixUniformLocation, 1, GL_FALSE, glm::value_ptr(m_camera->GetProjectionMatrix()));
 
-    glEnable(GL_DEPTH_TEST);
     destination->Bind();
     glViewport(0, 0, m_windowSize.x, m_windowSize.y);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glEnable(GL_DEPTH_TEST);
     m_mesh->Draw();
     glDisable(GL_DEPTH_TEST);
 }

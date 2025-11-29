@@ -3,7 +3,7 @@
 in vec3 wPos;
 in vec3 wNormal;
 
-const vec3 lightDir = vec3(1.0, 1.0, -1.0);
+const vec3 lightDir = vec3(1.0, -1.0, -1.0);
 const float e = 2.718;
 const float layers = 6.0;
 
@@ -12,7 +12,7 @@ vec3 darkenColor(vec3 C, float d){
 }
 
 void main(){
-    float intensity = clamp(dot(wNormal, lightDir), 0.0, 1.0);
+    float intensity = clamp(dot(wNormal, -lightDir), 0.0, 1.0);
 
     float discretizedIntensity = ceil(layers * pow(e, intensity) / e) / layers;
 

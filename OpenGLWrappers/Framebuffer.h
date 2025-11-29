@@ -36,5 +36,6 @@ private:
     std::unique_ptr<Texture2D> m_colorTexture;
     int m_colorTextureSlot;
     std::vector<TextureParameter> m_colorTextureParameters;
+    GLuint m_rbo;
 };
 
