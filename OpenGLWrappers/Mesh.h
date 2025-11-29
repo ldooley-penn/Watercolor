@@ -4,6 +4,7 @@
 #include "glad/glad.h"
 
 #define GLM_ENABLE_EXPERIMENTAL
+#include <unordered_set>
 #include <glm/gtx/hash.hpp>
 #include "glm/glm.hpp"
 
@@ -46,7 +47,11 @@ public:
     void Draw() const;
 
 private:
-    void Construct(const std::vector<GLfloat>& vertexData, const std::vector<unsigned int>& indices);
+    static std::unordered_map<GLuint, std::unordered_set<GLuint>> GenerateNeighborMap(const std::vector<GLuint>& indices);
+
+    static void CalculateVertexNormals(std::vector<GLfloat>& vertexData, const std::vector<GLuint>& indices);
+
+    void Construct(const std::vector<GLfloat>& vertexData, const std::vector<GLuint>& indices);
 
     glm::mat4 m_modelMatrix;
     GLuint m_vbo;
