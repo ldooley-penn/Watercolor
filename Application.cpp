@@ -173,6 +173,8 @@ bool Application::Initialize()
 
     glClearColor(0.5f, 1.0f, 0.75f, 1.0f);
 
+    glEnable(GL_CULL_FACE);
+
     m_defaultProgram = ShaderLoader::createShaderProgram("Shaders/Default.vert", "Shaders/Default.frag");
     m_rgbToLuvProgram = ShaderLoader::createShaderProgram("Shaders/RGBtoLUV.vert", "Shaders/RGBtoLUV.frag");
     m_luvToRgbProgram = ShaderLoader::createShaderProgram("Shaders/LUVtoRGB.vert", "Shaders/LUVtoRGB.frag");
@@ -353,6 +355,7 @@ void Application::Tick(double deltaTime)
 
     if (m_renderMode == RenderMode::Mesh) {
         RenderMesh(m_pingPongFramebuffers[0]);
+        ApplyWaterColorEffects(m_pingPongFramebuffers[0]);
     }
     else {
         ApplyWaterColorEffects(m_meanShiftedImage);
@@ -515,7 +518,6 @@ void Application::RenderMesh(const std::unique_ptr<Framebuffer> &destination) co
 
     glEnable(GL_DEPTH_TEST);
     destination->Bind();
-    Framebuffer::Unbind();
     glViewport(0, 0, m_windowSize.x, m_windowSize.y);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     m_mesh->Draw();

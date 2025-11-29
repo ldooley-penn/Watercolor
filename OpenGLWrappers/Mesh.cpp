@@ -78,6 +78,8 @@ Mesh::Mesh(const std::string &filepath):
 
     SmoothNormals(1, vertices, indices);
 
+    FlipTriangles(indices);
+
     Construct(vertices, indices);
 }
 
@@ -181,6 +183,12 @@ void Mesh::SmoothNormals(unsigned int iterations, std::vector<GLfloat> &vertexDa
             vertexData[6 * index + 4] = newVertexNormal.y;
             vertexData[6 * index + 5] = newVertexNormal.z;
         }
+    }
+}
+
+void Mesh::FlipTriangles(std::vector<GLuint> &indices) {
+    for (int i = 0; i<indices.size(); i += 3) {
+        std::swap(indices[i], indices[i + 1]);
     }
 }
 
